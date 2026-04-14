@@ -53,16 +53,6 @@ class TestProbeWorkspace:
         assert result.shortterm_path is None
         assert result.longterm_path is None
 
-    def test_shortterm_v2026_4_x_detected(self, tmp_path):
-        """探测到 short-time-recall.json 时，格式识别为 v2026_4_x。"""
-        ws = _make_workspace(tmp_path, with_shortterm=True,
-                             shortterm_name="memory/short-time-recall.json")
-        result = probe_workspace(str(ws))
-
-        assert result.has_shortterm
-        assert result.shortterm_format == "v2026_4_x"
-        assert result.shortterm_path.name == "short-time-recall.json"
-
     def test_shortterm_source_code_detected(self, tmp_path):
         """探测到 .dreams/short-term-recall.json 时，格式识别为 source_code。"""
         ws = _make_workspace(tmp_path, with_shortterm=True,
@@ -81,13 +71,14 @@ class TestProbeWorkspace:
         assert any("短期记忆" in w or "short" in w.lower() for w in result.warnings)
 
     def test_longterm_manual_format(self, tmp_path):
-        """手动维护格式的 MEMORY.md 被正确识别。"""
+        """纯手动维护格式的 MEMORY.md 被识别为 manual，不支持审计。"""
         content = "# MEMORY.md - Max's Long-term Memory\n\n## 关于小萌\n- 名字: 章晓萌\n"
         ws = _make_workspace(tmp_path, with_longterm=True, longterm_content=content)
         result = probe_workspace(str(ws))
 
         assert result.has_longterm
-        assert result.longterm_format == "v2026_4_x"
+        assert result.longterm_format == "manual"
+        assert not result.supports_longterm_audit
 
     def test_longterm_dreaming_format(self, tmp_path):
         """Dreaming 格式的 MEMORY.md 被正确识别。"""
@@ -104,16 +95,16 @@ class TestProbeWorkspace:
         assert result.supports_longterm_audit
 
     def test_longterm_unknown_format_warning(self, tmp_path):
-        """未知格式的 MEMORY.md 产生 warning，不抛异常，supports_longterm_audit=False。"""
+        """无法识别结构的 MEMORY.md 被标记为 manual，不抛异常，不支持审计。"""
         content = "# Some Unknown Format\n\nSomething here.\n"
         ws = _make_workspace(tmp_path, with_longterm=True, longterm_content=content)
         result = probe_workspace(str(ws))
 
         assert result.has_longterm
-        assert result.longterm_format == "unknown"
+        # 有内容但无 Dreaming section → manual，不支持审计
+        assert result.longterm_format == "manual"
         assert not result.supports_longterm_audit
         assert isinstance(result.longterm_adapter, UnknownFormatAdapter)
-        assert any("格式" in w or "format" in w.lower() for w in result.warnings)
 
     def test_soul_detected(self, tmp_path):
         """SOUL.md 存在时被正确探测到。"""
@@ -149,4 +140,59 @@ class TestProbeWorkspace:
         result = probe_workspace(str(real))
         assert isinstance(result, ProbeResult)
         assert result.workspace_dir != ""
-        # 不要求 compatible=True，版本可能未经验证
+
+
+class TestProbeWithRealFixtures:
+    """使用 tests/fixtures/real 里的真实数据做集成测试。"""
+
+    FIXTURE_DIR = Path(__file__).parent / "fixtures" / "real"
+
+    def test_fixture_dir_exists(self):
+        """fixtures/real 目录存在（真实数据已就绪）。"""
+        if not self.FIXTURE_DIR.exists():
+            pytest.skip("tests/fixtures/real 不存在，跳过真实数据测试")
+        assert self.FIXTURE_DIR.is_dir()
+
+    def test_real_shortterm_detected(self):
+        """真实 short-term-recall.json 被正确探测。"""
+        if not self.FIXTURE_DIR.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = probe_workspace(str(self.FIXTURE_DIR))
+
+        assert result.has_shortterm, "短期记忆文件应该存在"
+        assert result.shortterm_format == "source_code"
+        assert result.shortterm_path.name == "short-term-recall.json"
+
+    def test_real_longterm_mixed_format(self):
+        """真实 MEMORY.md 是手动+Dreaming 混合格式。"""
+        if not self.FIXTURE_DIR.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = probe_workspace(str(self.FIXTURE_DIR))
+
+        assert result.has_longterm, "MEMORY.md 应该存在"
+        # 真实数据是手动 + Dreaming 混合格式
+        assert result.longterm_format == "mixed"
+        assert result.supports_longterm_audit, "mixed 格式应支持审计（含 Dreaming section）"
+
+    def test_real_soul_detected(self):
+        """真实 SOUL.md 被正确探测。"""
+        if not self.FIXTURE_DIR.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = probe_workspace(str(self.FIXTURE_DIR))
+
+        assert result.has_soul
+        assert result.soul_path.name == "SOUL.md"
+
+    def test_real_probe_summary_no_crash(self):
+        """format_probe_summary 在真实数据上不崩溃，输出合理。"""
+        if not self.FIXTURE_DIR.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = probe_workspace(str(self.FIXTURE_DIR))
+        summary = format_probe_summary(result)
+
+        assert isinstance(summary, str)
+        assert "short-term-recall.json" in summary or "短期记忆" in summary

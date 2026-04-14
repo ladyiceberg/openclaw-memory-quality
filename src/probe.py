@@ -110,9 +110,7 @@ def _probe_shortterm(workspace_dir: Path) -> tuple[Path | None, str]:
         p = workspace_dir / candidate
         if p.exists():
             # 根据路径推断格式名
-            if "short-time-recall" in candidate:
-                fmt = "v2026_4_x"
-            elif ".dreams" in candidate:
+            if ".dreams" in candidate:
                 fmt = "source_code"
             else:
                 fmt = "unknown"
@@ -241,8 +239,8 @@ def format_probe_summary(result: ProbeResult) -> str:
     if result.has_longterm:
         fmt_display = {
             "source_code": "Dreaming 格式",
-            "v2026_4_x": "手动维护格式",
             "mixed": "手动 + Dreaming 混合",
+            "manual": "手动维护格式（不支持审计）",
             "unknown": "未知格式",
         }.get(result.longterm_format, result.longterm_format)
         lines.append(f"   长期记忆：MEMORY.md（{fmt_display}）✓")

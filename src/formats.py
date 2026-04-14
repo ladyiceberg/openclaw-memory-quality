@@ -20,8 +20,7 @@ from dataclasses import dataclass, field
 # ── 短期记忆路径候选（按优先级，找到第一个存在的即停止）──────────────────────
 
 SHORT_TERM_CANDIDATES: list[str] = [
-    "memory/short-time-recall.json",             # v2026.4.x 实测
-    "memory/.dreams/short-term-recall.json",     # 源码版本
+    "memory/.dreams/short-term-recall.json",     # 源码版本（真实数据确认有效）
     "memory/short-term-recall.json",             # 备选变体
 ]
 
@@ -35,15 +34,15 @@ LOCK_CANDIDATES: list[str] = [
 
 # 格式 A：Dreaming 自动晋升（源码版本）
 LONGTERM_DREAMING_HEADER_RE = re.compile(
-    r"^## Promoted From Short-Term Memory \(\d{4}-\d{2}-\d{2}\)$"
+    r"^## Promoted From Short-Term Memory \(\d{4}-\d{2}-\d{2}\)$",
+    re.MULTILINE,
 )
 LONGTERM_DREAMING_ITEM_RE = re.compile(
-    r"^- .+ \[score=[\d.]+ recalls=\d+ avg=[\d.]+ source=.+:\d+-\d+\]$"
+    r"^- .+ \[score=[\d.]+ recalls=\d+ avg=[\d.]+ source=.+:\d+-\d+\]$",
+    re.MULTILINE,
 )
-LONGTERM_FILE_HEADER_DREAMING = "# Long-Term Memory"
 
-# 格式 B：Agent 手动维护（v2026.4.x 实测）
-LONGTERM_MANUAL_HEADER_RE = re.compile(r"^# MEMORY\.md")
+LONGTERM_MANUAL_HEADER_RE = re.compile(r"^# MEMORY\.md", re.MULTILINE)
 
 # Issue 链接（未知格式时引导用户反馈）
 ISSUE_URL = "https://github.com/ladyiceberg/openclaw-memory-quality/issues"
@@ -62,13 +61,6 @@ class FormatSpec:
 
 
 KNOWN_FORMATS: dict[str, FormatSpec] = {
-    "v2026_4_x": FormatSpec(
-        name="v2026_4_x",
-        shortterm_paths=["memory/short-time-recall.json"],
-        longterm_header_pattern=r"^# MEMORY\.md",
-        promotion_header_pattern=None,  # Dreaming 格式待真实触发后确认
-        notes="v2026.4.x 实测版本",
-    ),
     "source_code": FormatSpec(
         name="source_code",
         shortterm_paths=["memory/.dreams/short-term-recall.json"],
@@ -149,26 +141,20 @@ def detect_longterm_format(content: str) -> tuple[str, FormatAdapter]:
     根据 MEMORY.md 内容识别格式，返回 (格式名, adapter)。
 
     识别逻辑：
-      1. 检查文件头是否匹配已知格式
-      2. 检查是否包含 Dreaming section header
+      1. 包含 Dreaming section header → source_code（可做 V1/V2/V3 审计）
+      2. 只有手动内容（无 Dreaming section）→ manual（只读，无法审计）
       3. 都不匹配 → UnknownFormatAdapter
     """
-    first_lines = content[:500]  # 只看文件开头
-
-    # 格式 A：Dreaming 格式（源码版本）
-    if LONGTERM_FILE_HEADER_DREAMING in first_lines:
+    # 格式 A：包含 Dreaming 晋升 section（可能是纯 Dreaming 或手动+Dreaming 混合）
+    if LONGTERM_DREAMING_HEADER_RE.search(content):
         spec = KNOWN_FORMATS["source_code"]
-        return "source_code", RuleBasedAdapter(spec)
+        # 同时检查是否有手动内容
+        fmt = "mixed" if LONGTERM_MANUAL_HEADER_RE.search(content[:500]) else "source_code"
+        return fmt, RuleBasedAdapter(spec)
 
-    # 格式 B：手动维护格式（v2026.4.x 实测）
-    if LONGTERM_MANUAL_HEADER_RE.search(first_lines):
-        # 进一步检查是否同时包含 Dreaming section（两种格式共存）
-        if LONGTERM_DREAMING_HEADER_RE.search(content):
-            # 混合格式：手动 + Dreaming 追加
-            spec = KNOWN_FORMATS["source_code"]
-            return "mixed", RuleBasedAdapter(spec)
-        spec = KNOWN_FORMATS["v2026_4_x"]
-        return "v2026_4_x", RuleBasedAdapter(spec)
+    # 格式 B：纯手动维护，无 Dreaming section（不支持 V1/V2/V3 审计）
+    if content.strip():
+        return "manual", UnknownFormatAdapter()
 
-    # 兜底：未知格式
+    # 空文件
     return "unknown", UnknownFormatAdapter()

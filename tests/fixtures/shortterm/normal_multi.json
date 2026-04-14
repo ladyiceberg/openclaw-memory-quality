@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-14T08:00:00.000Z",
+  "entries": {
+    "memory:memory/2026-04-10.md:1:20": {
+      "key": "memory:memory/2026-04-10.md:1:20",
+      "path": "memory/2026-04-10.md",
+      "startLine": 1,
+      "endLine": 20,
+      "source": "memory",
+      "snippet": "今天种了竹子和常春藤 小院在鼓楼边胡同 天气很好",
+      "recallCount": 5,
+      "dailyCount": 2,
+      "groundedCount": 1,
+      "totalScore": 3.45,
+      "maxScore": 0.82,
+      "firstRecalledAt": "2026-04-11T09:00:00.000Z",
+      "lastRecalledAt": "2026-04-14T10:00:00.000Z",
+      "queryHashes": ["a1b2c3d4e5f6", "b2c3d4e5f6a1", "c3d4e5f6a1b2"],
+      "recallDays": ["2026-04-11", "2026-04-12", "2026-04-14"],
+      "conceptTags": ["竹子", "常春藤", "胡同"]
+    },
+    "memory:memory/2026-04-12.md:5:15": {
+      "key": "memory:memory/2026-04-12.md:5:15",
+      "path": "memory/2026-04-12.md",
+      "startLine": 5,
+      "endLine": 15,
+      "source": "memory",
+      "snippet": "吃越南菜 清爽新鲜香草 柠檬草青柠酸辣",
+      "recallCount": 3,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 2.1,
+      "maxScore": 0.75,
+      "firstRecalledAt": "2026-04-12T20:00:00.000Z",
+      "lastRecalledAt": "2026-04-13T15:00:00.000Z",
+      "queryHashes": ["d4e5f6a1b2c3", "e5f6a1b2c3d4"],
+      "recallDays": ["2026-04-12", "2026-04-13"],
+      "conceptTags": ["越南菜", "香草"],
+      "promotedAt": "2026-04-14T03:00:00.000Z"
+    },
+    "memory:memory/2026-04-08.md:50:60": {
+      "key": "memory:memory/2026-04-08.md:50:60",
+      "path": "memory/2026-04-08.md",
+      "startLine": 50,
+      "endLine": 60,
+      "source": "memory",
+      "snippet": "openclaw 升级完成 版本 2026.4.7",
+      "recallCount": 8,
+      "dailyCount": 3,
+      "groundedCount": 2,
+      "totalScore": 5.6,
+      "maxScore": 0.91,
+      "firstRecalledAt": "2026-04-09T08:00:00.000Z",
+      "lastRecalledAt": "2026-04-14T06:00:00.000Z",
+      "queryHashes": [
+        "f1a2b3c4d5e6", "a2b3c4d5e6f1", "b3c4d5e6f1a2",
+        "c4d5e6f1a2b3", "d5e6f1a2b3c4"
+      ],
+      "recallDays": ["2026-04-09", "2026-04-10", "2026-04-12", "2026-04-14"],
+      "conceptTags": ["openclaw", "升级", "2026.4.7"]
+    }
+  }
+}

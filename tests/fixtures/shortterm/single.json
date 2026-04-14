@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-14T08:00:00.000Z",
+  "entries": {
+    "memory:memory/2026-04-14.md:1:10": {
+      "key": "memory:memory/2026-04-14.md:1:10",
+      "path": "memory/2026-04-14.md",
+      "startLine": 1,
+      "endLine": 10,
+      "source": "memory",
+      "snippet": "今天开始写 openclaw-memhealth",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.78,
+      "maxScore": 0.78,
+      "firstRecalledAt": "2026-04-14T10:00:00.000Z",
+      "lastRecalledAt": "2026-04-14T10:00:00.000Z",
+      "queryHashes": ["a1b2c3d4e5f6"],
+      "recallDays": ["2026-04-14"],
+      "conceptTags": ["openclaw-memhealth"]
+    }
+  }
+}

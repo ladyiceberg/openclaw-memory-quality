@@ -149,6 +149,72 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "→ 运行 memory_longterm_audit_oc() 查看长期记忆腐化情况",
     },
 
+    # ── longterm audit ────────────────────────────────────────────────────────
+    "audit.header": {
+        "en": "📋 Long-term Memory Audit",
+        "zh": "📋 长期记忆审计",
+    },
+    "audit.summary": {
+        "en": "MEMORY.md: {sections} sections, {items} entries",
+        "zh": "MEMORY.md：{sections} 个 section，{items} 条记忆",
+    },
+    "audit.results_header": {
+        "en": "Audit results:",
+        "zh": "审计结果：",
+    },
+    "audit.keep": {
+        "en": "  ✓ Keep:            {n} ({pct}%)",
+        "zh": "  ✓ 保留（keep）：           {n} 条（{pct}%）",
+    },
+    "audit.review": {
+        "en": "  ! Review:          {n} ({pct}%)",
+        "zh": "  ! 复查（review）：          {n} 条（{pct}%）",
+    },
+    "audit.delete": {
+        "en": "  ✕ Suggested delete: {n} ({pct}%)",
+        "zh": "  ✕ 建议删除（delete）：      {n} 条（{pct}%）",
+    },
+    "audit.delete_reasons_header": {
+        "en": "Delete reason breakdown:",
+        "zh": "删除原因分布：",
+    },
+    "audit.reason_deleted": {
+        "en": "  Source file deleted:   {n}",
+        "zh": "  来源文件已删除：  {n} 条",
+    },
+    "audit.reason_duplicate": {
+        "en": "  Duplicate promotion:   {n}",
+        "zh": "  重复晋升：        {n} 条",
+    },
+    "audit.non_standard_warn": {
+        "en": "⚠️  Non-standard sections (hand-written): {n}\n   → Will be preserved in any cleanup operation",
+        "zh": "⚠️  非标准段落（用户手写）：{n} 个 section\n   → 这些内容将在任何清理操作中默认保留",
+    },
+    "audit.llm_hint": {
+        "en": "💡 {n} review entries can be further evaluated with LLM\n   Run memory_longterm_audit_oc(use_llm=True) to assess semantic validity",
+        "zh": "💡 {n} 条 review 条目可进一步用 LLM 做语义评估\n   运行 memory_longterm_audit_oc(use_llm=True) 判断哪些「改了但结论仍成立」",
+    },
+    "audit.report_id_line": {
+        "en": "Report ID: {report_id}\n→ Run memory_longterm_cleanup_oc(report_id=\"{report_id}\") to apply cleanup",
+        "zh": "Report ID：{report_id}\n→ 运行 memory_longterm_cleanup_oc(report_id=\"{report_id}\") 执行清理",
+    },
+    "audit.no_longterm": {
+        "en": "❌ MEMORY.md not found. Dreaming has not triggered yet.",
+        "zh": "❌ MEMORY.md 不存在，Dreaming 尚未触发过。",
+    },
+    "audit.format_unsupported": {
+        "en": "❌ MEMORY.md format does not support audit (no structured Dreaming entries).",
+        "zh": "❌ 当前 MEMORY.md 格式不支持审计（无结构化 Dreaming 条目）。",
+    },
+    "audit.parse_error": {
+        "en": "❌ MEMORY.md parse failed: {msg}",
+        "zh": "❌ MEMORY.md 解析失败：{msg}",
+    },
+    "audit.llm_disabled": {
+        "en": "(use_llm=True not yet implemented in Phase 1)",
+        "zh": "（use_llm=True 功能在 Phase 1 暂未实现）",
+    },
+
     # ── tool descriptions（Claude 看到的）─────────────────────────────────────
     "tool.health_check.desc": {
         "en": (

@@ -27,6 +27,7 @@ from mcp.types import TextContent, Tool
 from i18n import t
 from src.probe import format_probe_summary, probe_workspace
 from src.tools.health_check import run_health_check
+from src.tools.longterm_audit import run_longterm_audit
 
 # ── Server 实例 ────────────────────────────────────────────────────────────────
 
@@ -138,22 +139,9 @@ async def _retrieval_diagnose(probe, summary: str, top_n: int) -> list[TextConte
 
 
 async def _longterm_audit(probe, summary: str, use_llm: bool) -> list[TextContent]:
-    """memory_longterm_audit_oc 实现占位符（Step 6 替换）。"""
-    lines = [summary, ""]
-
-    if not probe.has_longterm:
-        lines.append("MEMORY.md 不存在，Dreaming 尚未触发过。")
-        return [TextContent(type="text", text="\n".join(lines))]
-
-    if not probe.supports_longterm_audit:
-        lines.append(
-            "当前 MEMORY.md 格式不支持长期记忆审计（无结构化 Dreaming 条目）。"
-        )
-        return [TextContent(type="text", text="\n".join(lines))]
-
-    # TODO: Step 6 实现完整逻辑
-    lines.append("🚧 长期记忆审计开发中（Step 6）")
-    return [TextContent(type="text", text="\n".join(lines))]
+    """memory_longterm_audit_oc 实现。"""
+    _report_id, text = run_longterm_audit(probe, use_llm=use_llm)
+    return [TextContent(type="text", text=text)]
 
 
 # ── 入口 ───────────────────────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ import pytest
 from src.probe import ProbeResult
 from src.formats import UnknownFormatAdapter, RuleBasedAdapter, KNOWN_FORMATS
 from src.tools.health_check import run_health_check, _score_icon
+from src.tools.longterm_audit import run_longterm_audit
 from src.readers.shortterm_reader import ShortTermEntry, ShortTermStore
 
 
@@ -265,3 +266,211 @@ class TestScoreIcon:
     def test_boundary_59_higher_better(self):
         """score=59：差一分，降为 🔴。"""
         assert _score_icon(59, higher_is_better=True) == "🔴"
+
+
+# ── test_longterm_audit_with_fixtures ─────────────────────────────────────────
+
+class TestLongtermAuditWithFixtures:
+    """memory_longterm_audit_oc 集成测试。"""
+
+    REAL_MEMORY = Path("tests/fixtures/real/MEMORY.md")
+    REAL_WS = Path("tests/fixtures/real")
+
+    def _real_probe(self):
+        return _make_probe(
+            shortterm_path=Path("tests/fixtures/real/memory/.dreams/short-term-recall.json"),
+            longterm_path=self.REAL_MEMORY,
+            longterm_format="mixed",
+            workspace_dir=str(self.REAL_WS),
+        )
+
+    # ── 基本功能 ───────────────────────────────────────────────────────────────
+
+    def test_real_data_returns_report_id(self):
+        """真实数据：审计成功，返回非空 report_id。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            report_id, text = run_longterm_audit(self._real_probe(), db_path=db)
+
+        assert report_id is not None
+        assert report_id.startswith("audit_")
+
+    def test_real_data_report_id_format(self):
+        """report_id 格式：audit_{timestamp_ms}，纯数字时间戳。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            report_id, _ = run_longterm_audit(self._real_probe(), db_path=db)
+
+        assert report_id is not None
+        ts_part = report_id[len("audit_"):]
+        assert ts_part.isdigit()
+
+    def test_real_data_output_has_header(self):
+        """输出包含审计标题。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            _, text = run_longterm_audit(self._real_probe(), db_path=db)
+
+        assert "Audit" in text or "审计" in text
+
+    def test_real_data_output_has_summary(self):
+        """输出包含 section 数和 item 数。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            _, text = run_longterm_audit(self._real_probe(), db_path=db)
+
+        assert "1" in text   # 1 个 section
+        assert "2" in text   # 2 条记忆
+
+    def test_real_data_output_has_action_counts(self):
+        """输出包含 keep/review/delete 计数。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            _, text = run_longterm_audit(self._real_probe(), db_path=db)
+
+        assert "keep" in text.lower() or "保留" in text
+        assert "review" in text.lower() or "复查" in text
+        assert "delete" in text.lower() or "删除" in text
+
+    def test_real_data_output_has_report_id(self):
+        """输出末尾包含 report_id。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            report_id, text = run_longterm_audit(self._real_probe(), db_path=db)
+
+        assert report_id in text
+
+    # ── session store 存储与读取 ───────────────────────────────────────────────
+
+    def test_report_saved_to_session_store(self):
+        """审计结果成功写入 session store，可按 report_id 读取。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        from src.session_store import load_audit_report
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            report_id, _ = run_longterm_audit(self._real_probe(), db_path=db)
+            payload = load_audit_report(report_id, db_path=db)
+
+        assert payload is not None
+        assert "total_items" in payload
+        assert "items" in payload
+
+    def test_consecutive_runs_produce_different_report_ids(self):
+        """连续运行两次 → 两个不同 report_id，都在 session store 里。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        import time
+        from src.session_store import load_audit_report
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            rid1, _ = run_longterm_audit(self._real_probe(), db_path=db)
+            time.sleep(0.01)   # 确保时间戳不同
+            rid2, _ = run_longterm_audit(self._real_probe(), db_path=db)
+
+            assert rid1 != rid2
+            assert load_audit_report(rid1, db_path=db) is not None
+            assert load_audit_report(rid2, db_path=db) is not None
+
+    def test_payload_contains_items(self):
+        """payload 中的 items 列表非空，每条含必需字段。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        from src.session_store import load_audit_report
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            report_id, _ = run_longterm_audit(self._real_probe(), db_path=db)
+            payload = load_audit_report(report_id, db_path=db)
+
+        assert len(payload["items"]) == 2
+        for item in payload["items"]:
+            assert "source_path" in item
+            assert "action_hint" in item
+            assert "v1_status" in item
+            assert "v3_status" in item
+
+    def test_items_by_action_sum_equals_total(self):
+        """payload 中 keep+review+delete 之和 = total_items。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        from src.session_store import load_audit_report
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            report_id, _ = run_longterm_audit(self._real_probe(), db_path=db)
+            payload = load_audit_report(report_id, db_path=db)
+
+        total = payload["total_items"]
+        action_sum = sum(payload["items_by_action"].values())
+        assert action_sum == total
+
+    # ── 错误路径 ───────────────────────────────────────────────────────────────
+
+    def test_no_longterm_returns_none_report_id(self):
+        """MEMORY.md 不存在：report_id=None，输出友好提示。"""
+        probe = _make_probe(
+            shortterm_path=None,
+            longterm_path=None,
+            longterm_format="not_found",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            report_id, text = run_longterm_audit(probe, db_path=db)
+
+        assert report_id is None
+        assert "Traceback" not in text
+
+    def test_manual_format_returns_none_report_id(self):
+        """纯手动格式（不支持审计）：report_id=None。"""
+        manual_md = Path("tests/fixtures/longterm/manual_only.md")
+        probe = _make_probe(
+            longterm_path=manual_md,
+            longterm_format="manual",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            report_id, text = run_longterm_audit(probe, db_path=db)
+
+        assert report_id is None
+        assert "Traceback" not in text
+
+    def test_use_llm_true_shows_placeholder(self):
+        """use_llm=True 在 Phase 1 显示占位提示，不崩溃。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db = Path(tmpdir) / "test.db"
+            report_id, text = run_longterm_audit(
+                self._real_probe(), use_llm=True, db_path=db
+            )
+
+        # Phase 1 不支持 LLM，但不崩溃，仍然返回 report_id
+        assert report_id is not None
+        assert "Traceback" not in text
+

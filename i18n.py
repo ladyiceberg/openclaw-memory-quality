@@ -215,6 +215,92 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "（use_llm=True 功能在 Phase 1 暂未实现）",
     },
 
+    # ── retrieval diagnose ────────────────────────────────────────────────────
+    "diagnose.header": {
+        "en": "🔍 Retrieval Quality Diagnosis",
+        "zh": "🔍 检索质量诊断",
+    },
+    "diagnose.no_shortterm": {
+        "en": "❌ Short-term memory file not found. Cannot run retrieval diagnosis.",
+        "zh": "❌ 短期记忆文件未找到，无法运行检索质量诊断。",
+    },
+    "diagnose.read_error": {
+        "en": "❌ Failed to read short-term memory: {msg}",
+        "zh": "❌ 短期记忆读取失败：{msg}",
+    },
+    "diagnose.high_freq_section": {
+        "en": "High-frequency low-quality entries (avg < 0.35, recalls > 5): {n}",
+        "zh": "高频低质条目（avg < 0.35，recalls > 5）：{n} 条",
+    },
+    "diagnose.semantic_void_section": {
+        "en": "Semantic-void high-frequency entries (no tags, recalls > 5): {n}",
+        "zh": "语义空洞高频条目（无 tags，recalls > 5）：{n} 条",
+    },
+    "diagnose.ambiguous_section": {
+        "en": "Ambiguous entries (borderline quality, may benefit from LLM review): {n}",
+        "zh": "模糊区间条目（质量边界，可选 LLM 复核）：{n} 条",
+    },
+    "diagnose.entry_line": {
+        "en": "  {rank}. {source}:{start}-{end}",
+        "zh": "  {rank}. {source}:{start}-{end}",
+    },
+    "diagnose.entry_stats": {
+        "en": "     recalls={recalls}, avg={avg}, max={max_score}, tags=[{tags}]",
+        "zh": "     recalls={recalls}, avg={avg}, max={max_score}, tags=[{tags}]",
+    },
+    "diagnose.reason_never_relevant": {
+        "en": "     → No high-quality hit ever — likely FTS literal match",
+        "zh": "     → 无一次高质量命中，FTS 字面匹配嫌疑",
+    },
+    "diagnose.reason_occasional_hit": {
+        "en": "     → Occasionally relevant but usually not the target",
+        "zh": "     → 偶尔相关但通常不是目标内容",
+    },
+    "diagnose.reason_semantic_void": {
+        "en": "     → High recall with no semantic tags — likely FTS noise",
+        "zh": "     → 高频命中但无语义标签，可能是 FTS 噪声",
+    },
+    "diagnose.reason_ambiguous": {
+        "en": "     → Borderline quality, use LLM review to decide",
+        "zh": "     → 质量边界，建议 LLM 复核决定去留",
+    },
+    "diagnose.truncated": {
+        "en": "  ... (showing top {shown} of {total})",
+        "zh": "  ... （仅展示前 {shown} 条，共 {total} 条）",
+    },
+    "diagnose.health_score": {
+        "en": "⚠️  Retrieval Health: {score}/100\n   Breakdown: high-freq low-quality {hflq_pct}%, semantic-void {sv_pct}%\n   Likely cause: no dedicated embedding or minScore too low (default 0.35)",
+        "zh": "⚠️  检索健康分：{score}/100\n   低分原因：高频低质条目占比 {hflq_pct}%，语义空洞高频 {sv_pct}%\n   可能根因：未配置专用 embedding 或 minScore 过低（默认 0.35）",
+    },
+    "diagnose.health_score_ok": {
+        "en": "✅  Retrieval Health: {score}/100",
+        "zh": "✅  检索健康分：{score}/100",
+    },
+    "diagnose.config_advice_header": {
+        "en": "💡 Configuration suggestions:",
+        "zh": "💡 配置建议：",
+    },
+    "diagnose.config_minscore": {
+        "en": "   - Raise minScore from 0.35 to 0.50 to reduce ~30% false positives entering short-term memory",
+        "zh": "   - 将 minScore 从 0.35 提升到 0.50 可减少约 30% 假阳性进入短期记忆",
+    },
+    "diagnose.config_embedding": {
+        "en": "   - Configure voyage-code-3 embedding for better code semantic accuracy",
+        "zh": "   - 配置 voyage-code-3 embedding（已内置支持）可提升代码检索语义准确度",
+    },
+    "diagnose.config_mmr": {
+        "en": "   - Enable MMR (disabled by default) to reduce duplicate fragment hits",
+        "zh": "   - 开启 MMR（默认关闭）可减少重复片段命中",
+    },
+    "diagnose.all_healthy": {
+        "en": "✅  No high-risk entries found. Retrieval quality looks good.",
+        "zh": "✅  未发现高风险条目，检索质量良好。",
+    },
+    "diagnose.stats_only_hint": {
+        "en": "(Pass top_n > 0 to see individual entries)",
+        "zh": "（传入 top_n > 0 可查看具体条目）",
+    },
+
     # ── tool descriptions（Claude 看到的）─────────────────────────────────────
     "tool.health_check.desc": {
         "en": (

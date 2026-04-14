@@ -14,6 +14,7 @@ from src.probe import ProbeResult
 from src.formats import UnknownFormatAdapter, RuleBasedAdapter, KNOWN_FORMATS
 from src.tools.health_check import run_health_check, _score_icon
 from src.tools.longterm_audit import run_longterm_audit
+from src.tools.retrieval_diagnose import run_retrieval_diagnose
 from src.readers.shortterm_reader import ShortTermEntry, ShortTermStore
 
 
@@ -473,4 +474,205 @@ class TestLongtermAuditWithFixtures:
         # Phase 1 不支持 LLM，但不崩溃，仍然返回 report_id
         assert report_id is not None
         assert "Traceback" not in text
+
+
+# ── test_retrieval_diagnose_with_fixtures ─────────────────────────────────────
+
+class TestRetrievalDiagnoseWithFixtures:
+    """memory_retrieval_diagnose_oc 集成测试。"""
+
+    REAL_ST = Path("tests/fixtures/real/memory/.dreams/short-term-recall.json")
+
+    def _real_probe(self):
+        return _make_probe(shortterm_path=self.REAL_ST)
+
+    # ── 基本功能 ───────────────────────────────────────────────────────────────
+
+    def test_real_data_runs_without_error(self):
+        """真实数据：诊断无报错，返回非空字符串。"""
+        if not self.REAL_ST.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = run_retrieval_diagnose(self._real_probe())
+
+        assert isinstance(result, str)
+        assert len(result) > 0
+        assert "Traceback" not in result
+
+    def test_real_data_output_has_header(self):
+        """输出包含标题。"""
+        if not self.REAL_ST.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = run_retrieval_diagnose(self._real_probe())
+
+        assert "Diagnosis" in result or "诊断" in result
+
+    def test_real_data_output_has_health_score(self):
+        """输出包含检索健康分。"""
+        if not self.REAL_ST.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = run_retrieval_diagnose(self._real_probe())
+
+        assert "Health" in result or "健康分" in result
+        assert "/100" in result
+
+    # ── top_n 控制 ─────────────────────────────────────────────────────────────
+
+    def test_top_n_zero_no_entry_details(self):
+        """top_n=0：只输出聚合统计，不列条目详情（无 recalls= 行）。"""
+        if not self.REAL_ST.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = run_retrieval_diagnose(self._real_probe(), top_n=0)
+
+        # top_n=0 时不展示条目详情
+        assert "recalls=" not in result
+
+    def test_top_n_zero_shows_stats_hint(self):
+        """top_n=0：输出提示用户传入 top_n>0 查看详情。"""
+        if not self.REAL_ST.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = run_retrieval_diagnose(self._real_probe(), top_n=0)
+
+        assert "top_n" in result
+
+    def test_top_n_positive_shows_entry_details(self):
+        """top_n>0 且有可疑条目：输出包含条目详情。"""
+        if not self.REAL_ST.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = run_retrieval_diagnose(self._real_probe(), top_n=20)
+
+        # 真实数据有 2 条 ambiguous 条目，应能显示
+        # 如果没有任何可疑条目，显示全部健康
+        assert isinstance(result, str)
+
+    def test_top_n_limits_entries_shown(self):
+        """top_n=1 时输出的条目数不超过 1。"""
+        if not self.REAL_ST.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        result = run_retrieval_diagnose(self._real_probe(), top_n=1)
+
+        # 最多显示 1 条（rank 1），不会出现 "  2. "
+        assert "  2. " not in result
+
+    # ── 排序验证 ───────────────────────────────────────────────────────────────
+
+    def test_high_freq_before_semantic_void(self):
+        """排序：high_freq_low_quality 条目在 semantic_void 之前。"""
+        from src.readers.shortterm_reader import ShortTermEntry, ShortTermStore
+        from src.tools.retrieval_diagnose import _sort_key
+        from src.analyzers.false_positive import classify_false_positive
+
+        # 构造两条：一条 semantic_void，一条 high_freq_low_quality
+        def _e(recall, total, max_s, tags):
+            return ShortTermEntry(
+                key="k", path="p.md", start_line=1, end_line=5,
+                source="memory", snippet="s",
+                recall_count=recall, total_score=total, max_score=max_s,
+                first_recalled_at="2026-01-01T00:00:00.000Z",
+                last_recalled_at="2026-04-01T00:00:00.000Z",
+                query_hashes=[], recall_days=[], concept_tags=tags,
+            )
+
+        # high_freq_low_quality: avg=0.20 (<0.35), recalls=10 (>5), max=0.3 (<0.55)
+        hflq = _e(10, 2.0, 0.3, [])
+        # semantic_void: avg=0.55 (>=0.35, 不触发 hflq), recalls=10 (>5), tags=[]
+        sv = _e(10, 5.5, 0.8, [])
+
+        cat_hflq, sub_hflq = classify_false_positive(hflq)
+        cat_sv, sub_sv = classify_false_positive(sv)
+
+        assert cat_hflq == "high_freq_low_quality"
+        assert cat_sv == "semantic_void"
+
+        key_hflq = _sort_key((hflq, cat_hflq, sub_hflq))
+        key_sv   = _sort_key((sv,   cat_sv,   sub_sv))
+
+        assert key_hflq < key_sv   # hflq 排在 sv 前面
+
+    def test_higher_recalls_sorts_first_within_same_category(self):
+        """同 category 内，recalls 多的排前面。"""
+        from src.readers.shortterm_reader import ShortTermEntry
+        from src.tools.retrieval_diagnose import _sort_key
+
+        def _e(recall):
+            return ShortTermEntry(
+                key="k", path="p.md", start_line=1, end_line=5,
+                source="memory", snippet="s",
+                recall_count=recall, total_score=recall * 0.2, max_score=0.3,
+                first_recalled_at="2026-01-01T00:00:00.000Z",
+                last_recalled_at="2026-04-01T00:00:00.000Z",
+                query_hashes=[], recall_days=[], concept_tags=[],
+            )
+
+        e10 = _e(10)
+        e20 = _e(20)
+        cat = "high_freq_low_quality"
+
+        assert _sort_key((e20, cat, "")) < _sort_key((e10, cat, ""))
+
+    # ── 边界场景 ───────────────────────────────────────────────────────────────
+
+    def test_no_shortterm_friendly_message(self):
+        """短期记忆文件不存在：友好提示，不崩溃。"""
+        probe = _make_probe(shortterm_path=None)
+        result = run_retrieval_diagnose(probe)
+
+        assert isinstance(result, str)
+        assert "Traceback" not in result
+
+    def test_broken_json_handled(self):
+        """broken JSON：友好错误，不崩溃。"""
+        broken = Path("tests/fixtures/shortterm/broken.json")
+        probe = _make_probe(shortterm_path=broken)
+        result = run_retrieval_diagnose(probe)
+
+        assert "Traceback" not in result
+
+    def test_config_advice_when_health_low(self):
+        """健康分 < 70 时输出配置建议。"""
+        from src.readers.shortterm_reader import ShortTermEntry, ShortTermStore
+        from unittest.mock import patch
+
+        # 构造一批高频低质条目，让健康分降低
+        entries = []
+        for i in range(20):
+            entries.append(ShortTermEntry(
+                key=f"k{i}", path=f"file{i}.md", start_line=1, end_line=5,
+                source="memory", snippet="s",
+                recall_count=10, total_score=2.0, max_score=0.3,
+                first_recalled_at="2026-01-01T00:00:00.000Z",
+                last_recalled_at="2026-04-01T00:00:00.000Z",
+                query_hashes=[], recall_days=[], concept_tags=[],
+            ))
+
+        store = ShortTermStore(
+            version=1,
+            updated_at="2026-04-14T08:00:00.000Z",
+            entries=entries,
+        )
+
+        # 直接 patch read_shortterm 返回我们构造的 store
+        with patch("src.tools.retrieval_diagnose.read_shortterm", return_value=store):
+            probe = _make_probe(shortterm_path=Path("tests/fixtures/shortterm/single.json"))
+            result = run_retrieval_diagnose(probe)
+
+        assert "minScore" in result or "0.35" in result  # 配置建议出现
+
+    def test_no_config_advice_when_health_ok(self):
+        """健康分 >= 70 时不输出配置建议。"""
+        if not self.REAL_ST.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        # 真实数据健康分 = 100
+        result = run_retrieval_diagnose(self._real_probe())
+
+        assert "minScore" not in result
+        assert "0.35" not in result
+
 

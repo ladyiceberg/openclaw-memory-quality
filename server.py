@@ -28,6 +28,7 @@ from i18n import t
 from src.probe import format_probe_summary, probe_workspace
 from src.tools.health_check import run_health_check
 from src.tools.longterm_audit import run_longterm_audit
+from src.tools.retrieval_diagnose import run_retrieval_diagnose
 
 # ── Server 实例 ────────────────────────────────────────────────────────────────
 
@@ -126,16 +127,9 @@ async def _health_check(probe, summary: str) -> list[TextContent]:
 
 
 async def _retrieval_diagnose(probe, summary: str, top_n: int) -> list[TextContent]:
-    """memory_retrieval_diagnose_oc 实现占位符（Step 7 替换）。"""
-    lines = [summary, ""]
-
-    if not probe.has_shortterm:
-        lines.append("短期记忆文件不存在，无法运行检索质量诊断。")
-        return [TextContent(type="text", text="\n".join(lines))]
-
-    # TODO: Step 7 实现完整逻辑
-    lines.append("🚧 检索质量诊断开发中（Step 7）")
-    return [TextContent(type="text", text="\n".join(lines))]
+    """memory_retrieval_diagnose_oc 实现。"""
+    report = run_retrieval_diagnose(probe, top_n=top_n)
+    return [TextContent(type="text", text=report)]
 
 
 async def _longterm_audit(probe, summary: str, use_llm: bool) -> list[TextContent]:

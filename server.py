@@ -26,6 +26,7 @@ from mcp.types import TextContent, Tool
 
 from i18n import t
 from src.probe import format_probe_summary, probe_workspace
+from src.tools.health_check import run_health_check
 
 # ── Server 实例 ────────────────────────────────────────────────────────────────
 
@@ -118,22 +119,9 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
 
 async def _health_check(probe, summary: str) -> list[TextContent]:
-    """memory_health_check_oc 实现占位符（Step 4 替换）。"""
-    lines = [summary, ""]
-
-    if probe.warnings:
-        for w in probe.warnings:
-            lines.append(f"⚠️ {w}")
-        lines.append("")
-
-    if not probe.has_shortterm:
-        lines.append("短期记忆文件不存在，无法运行健康检查。")
-        lines.append("请先配置 Memory Search embedding provider。")
-        return [TextContent(type="text", text="\n".join(lines))]
-
-    # TODO: Step 4 实现完整逻辑
-    lines.append("🚧 健康检查功能开发中（Step 4）")
-    return [TextContent(type="text", text="\n".join(lines))]
+    """memory_health_check_oc 实现。"""
+    report = run_health_check(probe)
+    return [TextContent(type="text", text=report)]
 
 
 async def _retrieval_diagnose(probe, summary: str, top_n: int) -> list[TextContent]:

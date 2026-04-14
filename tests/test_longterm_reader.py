@@ -261,6 +261,45 @@ class TestParsedRatio:
         assert isinstance(result, LongTermStore)
         assert result.raw_char_count > 0
 
+    def test_normal_file_high_parsed_ratio(self):
+        """标准格式文件：parsed_ratio 高于安全阀阈值（> 0.80）。"""
+        result = read_longterm_from_path(FIXTURES / "normal_multi_section.md")
+
+        assert isinstance(result, LongTermStore)
+        # section 内绝大部分行都能解析，ratio 应高于安全阀触发线
+        assert result.parsed_ratio > 0.80
+
+    def test_dreaming_section_chars_positive_when_has_sections(self):
+        """有 Dreaming section 时 dreaming_section_chars > 0。"""
+        result = read_longterm_from_path(FIXTURES / "normal_multi_section.md")
+
+        assert isinstance(result, LongTermStore)
+        assert result.dreaming_section_chars > 0
+
+    def test_dreaming_section_chars_zero_for_manual_only(self):
+        """纯手动格式：无 Dreaming section，dreaming_section_chars=0，ratio=1.0（不触发）。"""
+        result = read_longterm_from_path(FIXTURES / "manual_only.md")
+
+        assert isinstance(result, LongTermStore)
+        assert result.dreaming_section_chars == 0
+        assert result.parsed_ratio == pytest.approx(1.0)
+
+    def test_safety_valve_triggers_on_unparseable_section(self):
+        """section 内容完全无法解析 → 安全阀触发，返回 LongTermReadError。"""
+        result = read_longterm_from_path(FIXTURES / "safety_valve_trigger.md")
+
+        assert isinstance(result, LongTermReadError)
+        assert result.error_code == "safety_valve"
+        assert "解析率" in result.message or "解析" in result.message
+
+    def test_mixed_format_no_false_trigger(self):
+        """mixed 格式：手动内容多但安全阀不误触发。"""
+        result = read_longterm_from_path(FIXTURES / "mixed_format.md")
+
+        # mixed 格式有大量手动内容，但安全阀用 section 内字符做分母，不应触发
+        assert isinstance(result, LongTermStore)
+        assert result.format_name == "mixed"
+
 
 # ── 真实数据集成测试 ───────────────────────────────────────────────────────────
 

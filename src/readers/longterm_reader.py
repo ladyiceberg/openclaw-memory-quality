@@ -91,15 +91,22 @@ class LongTermStore:
     manual_content_chars: int          # Dreaming section 外的字符数
     has_manual_content: bool           # 是否有手动内容（mixed 格式）
     format_name: str                   # "source_code" / "mixed" / "manual"
-    raw_char_count: int                # 文件原始字符数（用于 80% 安全阀）
-    parsed_char_count: int             # 成功解析的字符数（item snippet 合计）
+    raw_char_count: int                # 文件原始字符数
+    parsed_char_count: int             # Dreaming section 内成功解析的行字符数
+    dreaming_section_chars: int = 0   # Dreaming section 内全部行的字符总数（安全阀分母）
 
     @property
     def parsed_ratio(self) -> float:
-        """解析字符量占原始字符量的比例，用于 80% 安全阀校验。"""
-        if self.raw_char_count == 0:
+        """
+        Dreaming section 内成功解析的字符占 section 内总字符的比例。
+        用于 80% 安全阀校验。
+
+        使用 section 内字符作为分母（而非全文），避免 mixed 格式因手动
+        内容字符多而误触发。无 Dreaming section 时返回 1.0（不触发）。
+        """
+        if self.dreaming_section_chars == 0:
             return 1.0
-        return self.parsed_char_count / self.raw_char_count
+        return self.parsed_char_count / self.dreaming_section_chars
 
 
 @dataclass
@@ -198,7 +205,8 @@ def _parse_content(
 
     manual_lines = 0
     manual_chars = 0
-    parsed_chars = 0
+    parsed_chars = 0        # section 内成功解析的行字符数（包含整行，不只 snippet）
+    dreaming_chars = 0      # section 内全部行字符总数（安全阀分母）
 
     for line in lines:
         # ── Dreaming section header ────────────────────────────────────────────
@@ -207,13 +215,23 @@ def _parse_content(
             current_section = MemorySection(date=m_section.group(1))
             sections.append(current_section)
             pending_key = None
+            # section header 行：计入 dreaming_chars 也计入 parsed_chars
+            dreaming_chars += len(line)
+            parsed_chars += len(line)
             continue
+
+        # ── section 内的所有行（含空行）计入 dreaming_chars ────────────────────
+        # 放在各具体分支之前，统一计入分母；空行后续不会匹配任何分支，自然跳过
+        if current_section is not None:
+            dreaming_chars += len(line)
 
         # ── HTML 注释行（promotion marker）────────────────────────────────────
         m_comment = _PROMOTION_COMMENT_RE.match(line)
         if m_comment:
             pending_key = m_comment.group(1).strip()
-            # 注释行本身不归入 non_standard_lines，也不是 MemoryItem
+            # 注释行：属于 section 内，计入 parsed_chars
+            if current_section is not None:
+                parsed_chars += len(line)
             continue
 
         # ── MemoryItem（列表项 + metadata）────────────────────────────────────
@@ -231,7 +249,7 @@ def _parse_content(
                     promotion_key=pending_key,
                 )
                 current_section.items.append(item)
-                parsed_chars += len(item.snippet)
+                parsed_chars += len(line)   # 整行计入，而非只有 snippet
                 pending_key = None
                 continue
             else:
@@ -279,17 +297,20 @@ def _parse_content(
         format_name=effective_format,
         raw_char_count=raw_char_count,
         parsed_char_count=parsed_chars,
+        dreaming_section_chars=dreaming_chars,
     )
 
     # ── 80% 安全阀（仅对有 Dreaming section 的文件检查）──────────────────────
-    # 手动格式的 MEMORY.md 无 metadata，parsed_chars 必然很低，不应触发
-    if sections and store.parsed_ratio < 0.05 and total_items == 0:
-        # 有 section header 但完全没有解析成功任何 item → 可能格式大幅变化
+    # 分母用 dreaming_section_chars（section 内字符），而非全文，
+    # 避免 mixed 格式因手动内容字符多而误触发。
+    # 触发条件：section 内有足够内容（> 100 字符），但解析率 < 80%。
+    if sections and dreaming_chars > 100 and store.parsed_ratio < 0.80:
         return LongTermReadError(
             error_code="safety_valve",
             message=(
-                f"MEMORY.md 解析异常：发现 {len(sections)} 个 section header，"
-                f"但没有成功解析任何 item。格式可能已变化。"
+                f"MEMORY.md 解析率偏低（{store.parsed_ratio:.1%}），"
+                f"解析可能不完整，已中止。"
+                f"（Dreaming section 内 {parsed_chars} / {dreaming_chars} 字符被识别）"
             ),
             path=path_str,
         )

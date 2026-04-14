@@ -31,6 +31,7 @@ from src.tools.longterm_audit import run_longterm_audit
 from src.tools.retrieval_diagnose import run_retrieval_diagnose
 from src.tools.longterm_cleanup import run_longterm_cleanup
 from src.tools.shortterm_cleanup import run_shortterm_cleanup
+from src.tools.config_doctor import run_config_doctor
 
 # ── Server 实例 ────────────────────────────────────────────────────────────────
 
@@ -133,6 +134,19 @@ async def list_tools() -> list[Tool]:
                 },
             },
         ),
+        Tool(
+            name="memory_config_doctor_oc",
+            description=t("tool.config_doctor.desc"),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "workspace_dir": {
+                        "type": "string",
+                        "description": "OpenClaw workspace 路径（可选）",
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -167,6 +181,9 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         dry_run = bool(arguments.get("dry_run", True))
         return await _shortterm_cleanup(probe, cleanup_types, dry_run)
 
+    if name == "memory_config_doctor_oc":
+        return await _config_doctor(probe)
+
     return [TextContent(type="text", text=t("common.unknown_tool", name=name))]
 
 
@@ -200,6 +217,12 @@ async def _longterm_cleanup(probe, report_id: str) -> list[TextContent]:
 async def _shortterm_cleanup(probe, cleanup_types: list, dry_run: bool) -> list[TextContent]:
     """memory_cleanup_shortterm_oc 实现。"""
     text = run_shortterm_cleanup(probe, cleanup_types=cleanup_types, dry_run=dry_run)
+    return [TextContent(type="text", text=text)]
+
+
+async def _config_doctor(probe) -> list[TextContent]:
+    """memory_config_doctor_oc 实现。"""
+    text = run_config_doctor(probe)
     return [TextContent(type="text", text=text)]
 
 

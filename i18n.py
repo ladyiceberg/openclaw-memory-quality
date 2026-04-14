@@ -470,6 +470,88 @@ STRINGS: dict[str, dict[str, str]] = {
             "cleanup_types 默认为 [\"zombie\"]。"
         ),
     },
+    "tool.config_doctor.desc": {
+        "en": (
+            "Diagnose OpenClaw memory configuration issues from behavioral data. "
+            "Detects FTS degradation, low minScore, disabled MMR, and weak embedding. "
+            "Read-only. Returns specific configuration suggestions with JSON5 snippets."
+        ),
+        "zh": (
+            "从行为数据推断 OpenClaw 记忆配置问题。"
+            "检测 FTS 降级、minScore 过低、MMR 未开启、embedding 质量不足。"
+            "纯只读，返回具体配置建议和 JSON5 片段。"
+        ),
+    },
+
+    # ── config doctor ─────────────────────────────────────────────────────────
+    "doctor.header": {
+        "en": "🩺 Memory Config Diagnosis",
+        "zh": "🩺 记忆配置诊断",
+    },
+    "doctor.no_shortterm": {
+        "en": "❌ Short-term memory file not found. Cannot diagnose configuration.",
+        "zh": "❌ 短期记忆文件未找到，无法诊断配置。",
+    },
+    "doctor.all_good": {
+        "en": "✅ No configuration issues detected. Memory system looks healthy.",
+        "zh": "✅ 未发现配置问题，记忆系统运行正常。",
+    },
+    "doctor.issues_found": {
+        "en": "Found {n} potential configuration issue(s):",
+        "zh": "发现 {n} 个潜在配置问题：",
+    },
+    "doctor.fts_title": {
+        "en": "⚠️  [1] Possible FTS fallback mode (no semantic embedding)",
+        "zh": "⚠️  [1] 可能处于 FTS 降级模式（未启用语义 embedding）",
+    },
+    "doctor.fts_signal": {
+        "en": "   Signal: avg score {avg:.2f} < 0.45, empty-tag rate {empty_pct:.0f}% > 40%",
+        "zh": "   信号：avg score 均值 {avg:.2f} < 0.45，空标签占比 {empty_pct:.0f}% > 40%",
+    },
+    "doctor.fts_advice": {
+        "en": "   Fix: Configure an embedding provider (e.g. VOYAGE_API_KEY + voyage-code-3)",
+        "zh": "   建议：配置 embedding provider（如设置 VOYAGE_API_KEY 并使用 voyage-code-3）",
+    },
+    "doctor.minscore_title": {
+        "en": "⚠️  [{n}] minScore may be too low (default 0.35 lets in too much noise)",
+        "zh": "⚠️  [{n}] minScore 可能过低（默认 0.35 导致大量噪声进入）",
+    },
+    "doctor.minscore_signal": {
+        "en": "   Signal: {pct:.1f}% of entries are high-frequency low-quality (threshold: 15%)",
+        "zh": "   信号：{pct:.1f}% 的条目为高频低质（阈值 15%）",
+    },
+    "doctor.minscore_advice": {
+        "en": "   Fix: Raise minScore from 0.35 to 0.50",
+        "zh": "   建议：将 minScore 从 0.35 提升到 0.50",
+    },
+    "doctor.mmr_title": {
+        "en": "⚠️  [{n}] MMR may be disabled (duplicate fragments entering short-term memory)",
+        "zh": "⚠️  [{n}] MMR 可能未开启（重复片段进入短期记忆）",
+    },
+    "doctor.mmr_signal": {
+        "en": "   Signal: {pairs} overlapping entry pairs found in same source files",
+        "zh": "   信号：在同一来源文件中发现 {pairs} 对行号重叠条目",
+    },
+    "doctor.mmr_advice": {
+        "en": "   Fix: Enable MMR (mmr.enabled: true, lambda: 0.7)",
+        "zh": "   建议：启用 MMR（mmr.enabled: true, lambda: 0.7）",
+    },
+    "doctor.embedding_title": {
+        "en": "⚠️  [{n}] Embedding model may have weak semantic quality",
+        "zh": "⚠️  [{n}] embedding 模型语义质量可能不足",
+    },
+    "doctor.embedding_signal": {
+        "en": "   Signal: avg score {avg:.2f} in range [0.40, 0.55), few high-score entries ({high_pct:.0f}%)",
+        "zh": "   信号：avg score 均值 {avg:.2f} 在 [0.40, 0.55)，高分条目占比 {high_pct:.0f}%",
+    },
+    "doctor.embedding_advice": {
+        "en": "   Fix: Switch to voyage-code-3 (built-in support, better code semantics)",
+        "zh": "   建议：切换到 voyage-code-3（已内置支持，代码语义更准确）",
+    },
+    "doctor.config_snippet_header": {
+        "en": "\n💡 Suggested openclaw.json changes (~/.openclaw/openclaw.json, JSON5 format):",
+        "zh": "\n💡 建议的 openclaw.json 配置修改（~/.openclaw/openclaw.json，JSON5 格式）：",
+    },
 
     # ── 通用 ──────────────────────────────────────────────────────────────────
     "common.workspace_dir": {

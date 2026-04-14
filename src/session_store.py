@@ -52,6 +52,16 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
             total_items INTEGER NOT NULL,
             payload     TEXT NOT NULL    -- JSON: full LongtermAuditResult
         );
+
+        CREATE TABLE IF NOT EXISTS soul_snapshots (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            workspace   TEXT NOT NULL,
+            checked_at  REAL NOT NULL,
+            char_count  INTEGER NOT NULL,
+            content_hash TEXT NOT NULL,  -- SHA256 of file content
+            directive_count INTEGER NOT NULL,  -- must/always/never count
+            sections    TEXT NOT NULL    -- JSON: list of section names found
+        );
     """)
     conn.commit()
 
@@ -179,3 +189,81 @@ def make_report_id() -> str:
     """
     ts_ms = int(time.time() * 1000)
     return f"audit_{ts_ms}"
+
+
+# ── SOUL.md 快照读写 ───────────────────────────────────────────────────────────
+
+def save_soul_snapshot(
+    workspace: str,
+    char_count: int,
+    content_hash: str,
+    directive_count: int,
+    sections: list,
+    db_path: Optional[Path] = None,
+) -> None:
+    """
+    保存 SOUL.md 健康检查快照，供下次对比稳定性使用。
+
+    Args:
+        workspace       : workspace 路径
+        char_count      : 文件字符数
+        content_hash    : 文件内容 SHA256
+        directive_count : must/always/never 等强指令词数量
+        sections        : 检测到的标准 section 名称列表
+        db_path         : 测试用，覆盖默认 DB 路径
+    """
+    conn = _get_connection(db_path)
+    try:
+        conn.execute(
+            """INSERT INTO soul_snapshots
+               (workspace, checked_at, char_count, content_hash, directive_count, sections)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (workspace, time.time(), char_count, content_hash,
+             directive_count, json.dumps(sections)),
+        )
+        conn.commit()
+        # 只保留该 workspace 最近 20 次快照
+        conn.execute(
+            """DELETE FROM soul_snapshots WHERE id NOT IN (
+                SELECT id FROM soul_snapshots
+                WHERE workspace = ?
+                ORDER BY checked_at DESC LIMIT 20
+            )""",
+            (workspace,),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def load_last_soul_snapshot(
+    workspace: str,
+    db_path: Optional[Path] = None,
+) -> Optional[dict]:
+    """
+    读取该 workspace 最近一次 SOUL.md 快照。没有记录时返回 None。
+
+    Returns:
+        dict with keys: checked_at, char_count, content_hash,
+                        directive_count, sections (list)
+    """
+    conn = _get_connection(db_path)
+    try:
+        row = conn.execute(
+            """SELECT checked_at, char_count, content_hash, directive_count, sections
+               FROM soul_snapshots
+               WHERE workspace = ?
+               ORDER BY checked_at DESC LIMIT 1""",
+            (workspace,),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "checked_at":      row["checked_at"],
+            "char_count":      row["char_count"],
+            "content_hash":    row["content_hash"],
+            "directive_count": row["directive_count"],
+            "sections":        json.loads(row["sections"]),
+        }
+    finally:
+        conn.close()

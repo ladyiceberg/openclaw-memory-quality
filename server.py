@@ -32,6 +32,7 @@ from src.tools.retrieval_diagnose import run_retrieval_diagnose
 from src.tools.longterm_cleanup import run_longterm_cleanup
 from src.tools.shortterm_cleanup import run_shortterm_cleanup
 from src.tools.config_doctor import run_config_doctor
+from src.tools.soul_check import run_soul_check
 
 # ── Server 实例 ────────────────────────────────────────────────────────────────
 
@@ -147,6 +148,24 @@ async def list_tools() -> list[Tool]:
                 },
             },
         ),
+        Tool(
+            name="memory_soul_check_oc",
+            description=t("tool.soul_check.desc"),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "workspace_dir": {
+                        "type": "string",
+                        "description": "OpenClaw workspace 路径（可选）",
+                    },
+                    "use_llm": {
+                        "type": "boolean",
+                        "description": "是否启用 LLM 语义冲突检测（默认 false）",
+                        "default": False,
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -183,6 +202,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
     if name == "memory_config_doctor_oc":
         return await _config_doctor(probe)
+
+    if name == "memory_soul_check_oc":
+        use_llm = bool(arguments.get("use_llm", False))
+        return await _soul_check(probe, use_llm)
 
     return [TextContent(type="text", text=t("common.unknown_tool", name=name))]
 
@@ -223,6 +246,12 @@ async def _shortterm_cleanup(probe, cleanup_types: list, dry_run: bool) -> list[
 async def _config_doctor(probe) -> list[TextContent]:
     """memory_config_doctor_oc 实现。"""
     text = run_config_doctor(probe)
+    return [TextContent(type="text", text=text)]
+
+
+async def _soul_check(probe, use_llm: bool) -> list[TextContent]:
+    """memory_soul_check_oc 实现。"""
+    text = run_soul_check(probe, use_llm=use_llm)
     return [TextContent(type="text", text=text)]
 
 

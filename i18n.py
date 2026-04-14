@@ -482,6 +482,102 @@ STRINGS: dict[str, dict[str, str]] = {
             "纯只读，返回具体配置建议和 JSON5 片段。"
         ),
     },
+    "tool.soul_check.desc": {
+        "en": (
+            "Check SOUL.md health: boundary violations (code, URLs, injections), "
+            "identity drift (action verb density, missing sections), "
+            "and stability (change tracking across runs). "
+            "Read-only. Never auto-modifies SOUL.md."
+        ),
+        "zh": (
+            "检查 SOUL.md 健康状态：边界违规（代码、URL、注入痕迹）、"
+            "身份漂移（动词密度、section 缺失）、"
+            "稳定性（跨次运行变化追踪）。"
+            "纯只读，永不自动修改 SOUL.md。"
+        ),
+    },
+
+    # ── soul check ────────────────────────────────────────────────────────────
+    "soul.header": {
+        "en": "🔮 SOUL.md Health Check",
+        "zh": "🔮 SOUL.md 健康检查",
+    },
+    "soul.no_soul": {
+        "en": "❌ SOUL.md not found. The workspace may not be initialized, or the file was manually deleted.",
+        "zh": "❌ SOUL.md 未找到。工作区可能未初始化，或文件已被手动删除。",
+    },
+    "soul.file_info": {
+        "en": "File: {path} ({size} chars)",
+        "zh": "文件：{path}（{size} 字符）",
+    },
+    "soul.last_check_never": {
+        "en": "Last check: first run (establishing baseline)",
+        "zh": "上次检查：首次运行（建立基准）",
+    },
+    "soul.last_check_ago": {
+        "en": "Last check: {ago} ago{changed}",
+        "zh": "上次检查：{ago}前{changed}",
+    },
+    "soul.changed_flag": {
+        "en": "  ⚠️ (changed since last check)",
+        "zh": "（距上次有变化 ⚠️）",
+    },
+    "soul.c1_header": {
+        "en": "── C1 Boundary Check ─────────────────────────",
+        "zh": "── C1 边界检查 ───────────────────────────────",
+    },
+    "soul.c2_header": {
+        "en": "── C2 Identity Drift Check ───────────────────",
+        "zh": "── C2 身份漂移检查 ───────────────────────────",
+    },
+    "soul.c3_header": {
+        "en": "── C3 Stability Check ────────────────────────",
+        "zh": "── C3 稳定性检查 ─────────────────────────────",
+    },
+    "soul.c4_header": {
+        "en": "── C4 Conflict Check ─────────────────────────",
+        "zh": "── C4 冲突检查 ───────────────────────────────",
+    },
+    "soul.c4_disabled": {
+        "en": "(Disabled — pass use_llm=True to enable semantic conflict detection)",
+        "zh": "（未启用，传入 use_llm=True 开启语义冲突检测）",
+    },
+    "soul.section_ok": {
+        "en": "✅ No issues found.",
+        "zh": "✅ 未发现问题。",
+    },
+    "soul.flag_line": {
+        "en": "⚠️  {desc}",
+        "zh": "⚠️  {desc}",
+    },
+    "soul.first_run_note": {
+        "en": "ℹ️  First run — baseline established. Stability check will activate on next run.",
+        "zh": "ℹ️  首次运行，已建立基准。下次运行时开始稳定性追踪。",
+    },
+    "soul.summary_header": {
+        "en": "── Summary ───────────────────────────────────",
+        "zh": "── 总结 ──────────────────────────────────────",
+    },
+    "soul.risk_ok": {
+        "en": "Risk level: ✅ Healthy",
+        "zh": "风险等级：✅ 健康",
+    },
+    "soul.risk_low": {
+        "en": "Risk level: 🟡 Low (minor issues, worth reviewing)",
+        "zh": "风险等级：🟡 低（有轻微问题，建议 review）",
+    },
+    "soul.risk_medium": {
+        "en": "Risk level: ⚠️  Medium — review recommended",
+        "zh": "风险等级：⚠️  中等，建议 review",
+    },
+    "soul.risk_high": {
+        "en": "Risk level: 🔴 High — manual review required",
+        "zh": "风险等级：🔴 高风险，需要人工 review",
+    },
+    "soul.suggest_llm": {
+        "en": "→ Run memory_soul_check_oc(use_llm=True) for semantic conflict detection",
+        "zh": "→ 运行 memory_soul_check_oc(use_llm=True) 检查语义冲突",
+    },
 
     # ── config doctor ─────────────────────────────────────────────────────────
     "doctor.header": {

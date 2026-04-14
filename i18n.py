@@ -301,6 +301,114 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "（传入 top_n > 0 可查看具体条目）",
     },
 
+    # ── longterm cleanup ──────────────────────────────────────────────────────
+    "cleanup.lt.header": {
+        "en": "✅ Long-term Memory Cleanup Complete",
+        "zh": "✅ 长期记忆清理完成",
+    },
+    "cleanup.lt.deleted": {
+        "en": "Deleted:  {n} entries",
+        "zh": "删除：{n} 条",
+    },
+    "cleanup.lt.kept": {
+        "en": "Kept:     {n} entries{manual_note}",
+        "zh": "保留：{n} 条{manual_note}",
+    },
+    "cleanup.lt.manual_note": {
+        "en": " (incl. {n} hand-written sections)",
+        "zh": "（含 {n} 个用户手写 section）",
+    },
+    "cleanup.lt.backup": {
+        "en": "Backup:   {path}",
+        "zh": "备份：{path}",
+    },
+    "cleanup.lt.sections": {
+        "en": "MEMORY.md: {before} sections → {after} sections",
+        "zh": "MEMORY.md：{before} 个 section → {after} 个 section",
+    },
+    "cleanup.lt.no_delete": {
+        "en": "ℹ️  No entries marked for deletion. Nothing to do.",
+        "zh": "ℹ️  没有需要删除的条目。",
+    },
+    "cleanup.lt.err_no_report": {
+        "en": "❌ Report ID not found: {report_id}\n   Run memory_longterm_audit_oc() first to generate a report.",
+        "zh": "❌ 找不到 Report ID：{report_id}\n   请先运行 memory_longterm_audit_oc() 生成审计报告。",
+    },
+    "cleanup.lt.err_no_longterm": {
+        "en": "❌ MEMORY.md not found.",
+        "zh": "❌ MEMORY.md 不存在。",
+    },
+    "cleanup.lt.err_mtime": {
+        "en": "❌ MEMORY.md was modified after the audit. Please re-run memory_longterm_audit_oc() before cleanup.",
+        "zh": "❌ MEMORY.md 在审计后被修改，请重新运行 memory_longterm_audit_oc() 再执行清理。",
+    },
+    "cleanup.lt.err_safety_valve": {
+        "en": "❌ Safety check failed: parse ratio {ratio:.1%} is below 80%. Aborting to protect data.",
+        "zh": "❌ 安全校验失败：解析率 {ratio:.1%} 低于 80%，已中止以保护数据。",
+    },
+    "cleanup.lt.err_backup": {
+        "en": "❌ Backup failed: {msg}. Aborting.",
+        "zh": "❌ 备份失败：{msg}，已中止。",
+    },
+    "cleanup.lt.err_write": {
+        "en": "❌ Write failed: {msg}",
+        "zh": "❌ 写入失败：{msg}",
+    },
+    "cleanup.lt.err_lock": {
+        "en": "❌ Could not acquire lock (OpenClaw may be running). Try again in a moment.",
+        "zh": "❌ 无法获取并发锁（OpenClaw 可能正在运行），请稍后重试。",
+    },
+
+    # ── shortterm cleanup ─────────────────────────────────────────────────────
+    "cleanup.st.header": {
+        "en": "✅ Short-term Memory Cleanup Complete",
+        "zh": "✅ 短期记忆清理完成",
+    },
+    "cleanup.st.dry_run_header": {
+        "en": "🔍 Short-term Memory Cleanup Preview (dry_run=True)",
+        "zh": "🔍 短期记忆清理预览（dry_run=True）",
+    },
+    "cleanup.st.would_delete": {
+        "en": "Would delete: {n} entries\n  ├─ Zombie:         {zombie} entries\n  └─ False-positive: {fp} entries",
+        "zh": "将删除：{n} 条\n  ├─ 僵尸条目：      {zombie} 条\n  └─ 假阳性嫌疑：    {fp} 条",
+    },
+    "cleanup.st.deleted": {
+        "en": "Deleted:  {n} entries  ({zombie} zombie, {fp} false-positive)",
+        "zh": "删除：{n} 条（僵尸 {zombie} 条，假阳性 {fp} 条）",
+    },
+    "cleanup.st.kept": {
+        "en": "Kept:     {n} entries",
+        "zh": "保留：{n} 条",
+    },
+    "cleanup.st.backup": {
+        "en": "Backup:   {path}",
+        "zh": "备份：{path}",
+    },
+    "cleanup.st.no_delete": {
+        "en": "ℹ️  No zombie or false-positive entries found. Nothing to do.",
+        "zh": "ℹ️  没有发现僵尸或假阳性条目。",
+    },
+    "cleanup.st.err_no_shortterm": {
+        "en": "❌ Short-term memory file not found.",
+        "zh": "❌ 短期记忆文件未找到。",
+    },
+    "cleanup.st.err_read": {
+        "en": "❌ Failed to read short-term memory: {msg}",
+        "zh": "❌ 短期记忆读取失败：{msg}",
+    },
+    "cleanup.st.err_lock": {
+        "en": "❌ Could not acquire lock. Try again in a moment.",
+        "zh": "❌ 无法获取并发锁，请稍后重试。",
+    },
+    "cleanup.st.err_backup": {
+        "en": "❌ Backup failed: {msg}. Aborting.",
+        "zh": "❌ 备份失败：{msg}，已中止。",
+    },
+    "cleanup.st.dry_run_hint": {
+        "en": "→ Run with dry_run=False to apply",
+        "zh": "→ 传入 dry_run=False 执行实际删除",
+    },
+
     # ── tool descriptions（Claude 看到的）─────────────────────────────────────
     "tool.health_check.desc": {
         "en": (
@@ -336,6 +444,30 @@ STRINGS: dict[str, dict[str, str]] = {
             "MEMORY.md 深度审计。检查来源文件有效性、内容一致性和重复条目。"
             "返回 report_id 供清理使用。"
             "传入 use_llm=True 可进行语义评估（需要 API key）。"
+        ),
+    },
+    "tool.longterm_cleanup.desc": {
+        "en": (
+            "Clean up MEMORY.md based on a previous audit result. "
+            "Requires report_id from memory_longterm_audit_oc(). "
+            "Backs up the file before writing. Atomic write, safe."
+        ),
+        "zh": (
+            "根据审计结果清理 MEMORY.md。"
+            "需要提供 memory_longterm_audit_oc() 返回的 report_id。"
+            "写入前自动备份，原子写入，安全。"
+        ),
+    },
+    "tool.shortterm_cleanup.desc": {
+        "en": (
+            "Clean up zombie and/or false-positive entries from short-term memory. "
+            "Use dry_run=True (default) to preview, dry_run=False to apply. "
+            "cleanup_types defaults to [\"zombie\"]."
+        ),
+        "zh": (
+            "清理短期记忆中的僵尸条目和/或假阳性条目。"
+            "dry_run=True（默认）只预览，dry_run=False 实际执行。"
+            "cleanup_types 默认为 [\"zombie\"]。"
         ),
     },
 

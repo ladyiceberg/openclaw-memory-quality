@@ -29,6 +29,8 @@ from src.probe import format_probe_summary, probe_workspace
 from src.tools.health_check import run_health_check
 from src.tools.longterm_audit import run_longterm_audit
 from src.tools.retrieval_diagnose import run_retrieval_diagnose
+from src.tools.longterm_cleanup import run_longterm_cleanup
+from src.tools.shortterm_cleanup import run_shortterm_cleanup
 
 # ── Server 实例 ────────────────────────────────────────────────────────────────
 
@@ -89,6 +91,48 @@ async def list_tools() -> list[Tool]:
                 },
             },
         ),
+        Tool(
+            name="memory_longterm_cleanup_oc",
+            description=t("tool.longterm_cleanup.desc"),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "report_id": {
+                        "type": "string",
+                        "description": "memory_longterm_audit_oc() 返回的 report_id（必填）",
+                    },
+                    "workspace_dir": {
+                        "type": "string",
+                        "description": "OpenClaw workspace 路径（可选）",
+                    },
+                },
+                "required": ["report_id"],
+            },
+        ),
+        Tool(
+            name="memory_cleanup_shortterm_oc",
+            description=t("tool.shortterm_cleanup.desc"),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "workspace_dir": {
+                        "type": "string",
+                        "description": "OpenClaw workspace 路径（可选）",
+                    },
+                    "cleanup_types": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "清理类型，默认 [\"zombie\"]，可选 [\"zombie\",\"false_positive\"]",
+                        "default": ["zombie"],
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "description": "true=只预览不修改（默认），false=实际执行",
+                        "default": True,
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -114,6 +158,15 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         use_llm = bool(arguments.get("use_llm", False))
         return await _longterm_audit(probe, summary, use_llm)
 
+    if name == "memory_longterm_cleanup_oc":
+        report_id = arguments.get("report_id", "")
+        return await _longterm_cleanup(probe, report_id)
+
+    if name == "memory_cleanup_shortterm_oc":
+        cleanup_types = arguments.get("cleanup_types", ["zombie"])
+        dry_run = bool(arguments.get("dry_run", True))
+        return await _shortterm_cleanup(probe, cleanup_types, dry_run)
+
     return [TextContent(type="text", text=t("common.unknown_tool", name=name))]
 
 
@@ -135,6 +188,18 @@ async def _retrieval_diagnose(probe, summary: str, top_n: int) -> list[TextConte
 async def _longterm_audit(probe, summary: str, use_llm: bool) -> list[TextContent]:
     """memory_longterm_audit_oc 实现。"""
     _report_id, text = run_longterm_audit(probe, use_llm=use_llm)
+    return [TextContent(type="text", text=text)]
+
+
+async def _longterm_cleanup(probe, report_id: str) -> list[TextContent]:
+    """memory_longterm_cleanup_oc 实现。"""
+    text = run_longterm_cleanup(probe, report_id=report_id)
+    return [TextContent(type="text", text=text)]
+
+
+async def _shortterm_cleanup(probe, cleanup_types: list, dry_run: bool) -> list[TextContent]:
+    """memory_cleanup_shortterm_oc 实现。"""
+    text = run_shortterm_cleanup(probe, cleanup_types=cleanup_types, dry_run=dry_run)
     return [TextContent(type="text", text=text)]
 
 

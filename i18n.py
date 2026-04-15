@@ -783,6 +783,155 @@ STRINGS: dict[str, dict[str, str]] = {
         ),
     },
 
+    # ── dashboard HTML 内容 ────────────────────────────────────────────────────
+
+    # A. 时间格式化
+    "dashboard.time.unknown": {"en": "unknown",    "zh": "未知"},
+    "dashboard.time.just_now": {"en": "just now",  "zh": "刚刚"},
+    "dashboard.time.minutes_ago": {"en": "{n}m ago",   "zh": "{n} 分钟前"},
+    "dashboard.time.hours_ago":   {"en": "{n}h ago",   "zh": "{n} 小时前"},
+    "dashboard.time.days_ago":    {"en": "{n}d ago",   "zh": "{n} 天前"},
+
+    # B. 枚举映射 — action
+    "dashboard.action.keep":   {"en": "Keep",   "zh": "保留"},
+    "dashboard.action.review": {"en": "Review", "zh": "复查"},
+    "dashboard.action.delete": {"en": "Delete", "zh": "删除"},
+
+    # B. 枚举映射 — risk level
+    "dashboard.risk.ok":     {"en": "Healthy",       "zh": "健康"},
+    "dashboard.risk.low":    {"en": "Low Risk",       "zh": "低风险"},
+    "dashboard.risk.medium": {"en": "Medium Risk",    "zh": "中等风险"},
+    "dashboard.risk.high":   {"en": "High Risk",      "zh": "高风险"},
+
+    # B. 枚举映射 — v1 status
+    "dashboard.v1.exists":          {"en": "Source exists",        "zh": "来源存在"},
+    "dashboard.v1.deleted":         {"en": "Source deleted",       "zh": "来源已删除"},
+    "dashboard.v1.possibly_moved":  {"en": "Possibly moved",       "zh": "可能已移动"},
+
+    # B. 枚举映射 — v3 status
+    "dashboard.v3.ok":               {"en": "No duplicate",        "zh": "无重复"},
+    "dashboard.v3.duplicate_winner": {"en": "Duplicate (kept)",    "zh": "重复保留"},
+    "dashboard.v3.duplicate_loser":  {"en": "Duplicate (removed)", "zh": "重复删除"},
+
+    # B. 枚举映射 — skip reason
+    "dashboard.skip.source_deleted":   {"en": "Source file deleted",          "zh": "来源文件已删除"},
+    "dashboard.skip.import_only":      {"en": "Import statements only",       "zh": "仅含 import 语句"},
+    "dashboard.skip.comments_only":    {"en": "Comments only",                "zh": "仅含注释行"},
+    "dashboard.skip.boilerplate":      {"en": "Empty or boilerplate",         "zh": "空内容或样板代码"},
+    "dashboard.skip.debug_code":       {"en": "Debug output code",            "zh": "含调试输出代码"},
+    "dashboard.skip.already_promoted": {"en": "Already in MEMORY.md",         "zh": "已存在于 MEMORY.md"},
+
+    # B. 枚举映射 — config issue code
+    "dashboard.config.fts":       {"en": "FTS degradation mode (no semantic embedding)",  "zh": "FTS 降级模式（未使用语义 embedding）"},
+    "dashboard.config.minscore":  {"en": "minScore too low (too much noise)",              "zh": "minScore 过低（噪音条目过多）"},
+    "dashboard.config.mmr":       {"en": "MMR not enabled (duplicate entries)",            "zh": "MMR 未开启（重复条目多）"},
+    "dashboard.config.embedding": {"en": "Embedding model quality insufficient",           "zh": "Embedding 质量不足"},
+
+    # C. Header / Hero
+    "dashboard.html.title":        {"en": "OpenClaw Memory Health",  "zh": "OpenClaw 记忆健康"},
+    "dashboard.html.never_run":    {"en": "Never run",               "zh": "从未运行"},
+    "dashboard.html.updated_ago":  {"en": "Updated: {ago}",          "zh": "最近更新：{ago}"},
+    "dashboard.html.unknown_ws":   {"en": "Unknown workspace",       "zh": "未知 workspace"},
+
+    "dashboard.hero.no_data":        {"en": "No data yet",                                         "zh": "暂无数据"},
+    "dashboard.hero.no_data_sub":    {"en": "Run any check tool to get your health score.",        "zh": "请运行任意检查工具以获取健康评分"},
+    "dashboard.hero.healthy":        {"en": "Memory system is healthy",                            "zh": "记忆系统状态良好"},
+    "dashboard.hero.healthy_sub":    {"en": "All metrics look good. No action needed.",            "zh": "各项指标健康，无需立即处理。"},
+    "dashboard.hero.warning":        {"en": "Memory system needs attention",                       "zh": "记忆系统需要关注"},
+    "dashboard.hero.warning_sub":    {"en": "Some issues found. Recommended to address soon.",     "zh": "发现部分问题，建议尽快处理。"},
+    "dashboard.hero.critical":       {"en": "Memory system needs cleanup",                         "zh": "记忆系统需要处理"},
+    "dashboard.hero.critical_sub":   {"en": "Multiple issues found. Run cleanup tools now.",       "zh": "存在较多问题，建议立即运行清理工具。"},
+
+    # C. Hero coverage dots labels
+    "dashboard.coverage.longterm":  {"en": "Long-term",   "zh": "长期记忆"},
+    "dashboard.coverage.shortterm": {"en": "Short-term",  "zh": "短期记忆"},
+    "dashboard.coverage.soul":      {"en": "SOUL.md",     "zh": "SOUL.md"},
+
+    # D. 占位卡片标题 + 提示
+    "dashboard.placeholder.longterm.title":  {"en": "Long-term Memory",        "zh": "长期记忆"},
+    "dashboard.placeholder.longterm.hint":   {
+        "en": "Run <code>/memory-cleanup</code> to get long-term memory analysis",
+        "zh": "运行 <code>/memory-cleanup</code> 获取长期记忆分析",
+    },
+    "dashboard.placeholder.health.title":    {"en": "Short-term Overview",     "zh": "短期记忆概况"},
+    "dashboard.placeholder.health.hint":     {
+        "en": "Run <code>/memory-check</code> to get short-term memory overview",
+        "zh": "运行 <code>/memory-check</code> 获取短期记忆概况",
+    },
+    "dashboard.placeholder.promotion.title": {"en": "Pre-promotion Audit",     "zh": "晋升前预检"},
+    "dashboard.placeholder.promotion.hint":  {
+        "en": "Run <code>/memory-promote</code> to get pre-promotion audit report",
+        "zh": "运行 <code>/memory-promote</code> 获取晋升前预检报告",
+    },
+    "dashboard.placeholder.soul.title":      {"en": "SOUL.md Health",          "zh": "SOUL.md 健康"},
+    "dashboard.placeholder.soul.hint":       {
+        "en": "Run <code>/soul-check</code> to get SOUL.md health report",
+        "zh": "运行 <code>/soul-check</code> 获取 SOUL.md 健康报告",
+    },
+    "dashboard.placeholder.config.title":    {"en": "Config Diagnosis",        "zh": "配置诊断"},
+    "dashboard.placeholder.config.hint":     {
+        "en": "Run <code>/memory-diagnose</code> to get config diagnosis report",
+        "zh": "运行 <code>/memory-diagnose</code> 获取配置诊断报告",
+    },
+
+    # E. Section 1：长期记忆
+    "dashboard.longterm.title":         {"en": "Long-term Memory",           "zh": "长期记忆"},
+    "dashboard.longterm.meta":          {"en": "{sections} sections · {total} entries", "zh": "{sections} 个 section · {total} 条记忆"},
+    "dashboard.longterm.keep":          {"en": "Keep",                       "zh": "保留"},
+    "dashboard.longterm.review":        {"en": "Review",                     "zh": "复查"},
+    "dashboard.longterm.delete":        {"en": "Delete",                     "zh": "删除"},
+    "dashboard.longterm.llm_valid":     {"en": "Valid {n}",                  "zh": "有效 {n}"},
+    "dashboard.longterm.llm_outdated":  {"en": "Outdated {n}",               "zh": "过时 {n}"},
+    "dashboard.longterm.llm_uncertain": {"en": "Uncertain {n}",              "zh": "不确定 {n}"},
+    "dashboard.longterm.llm_merge":     {"en": "Merge suggestions {n}",      "zh": "合并建议 {n}"},
+    "dashboard.longterm.non_std_warn":  {
+        "en": "⚠️ {n} non-standard section(s) (user-written content, preserved during cleanup)",
+        "zh": "⚠️ {n} 个非标准段落（用户手写内容，不参与清理）",
+    },
+    "dashboard.longterm.group_delete":  {"en": "Suggested for deletion",     "zh": "建议删除"},
+    "dashboard.longterm.group_review":  {"en": "Suggested for review",       "zh": "建议复查"},
+    "dashboard.longterm.group_keep":    {"en": "All good",                   "zh": "状态良好"},
+    "dashboard.longterm.detail_source": {"en": "Source",                     "zh": "来源"},
+    "dashboard.longterm.detail_file":   {"en": "File status",                "zh": "文件状态"},
+    "dashboard.longterm.detail_dup":    {"en": "Duplicate",                  "zh": "重复检测"},
+    "dashboard.longterm.detail_score":  {"en": "Score",                      "zh": "晋升分"},
+
+    # E. Section 2：短期记忆
+    "dashboard.health.title":      {"en": "Short-term Overview",             "zh": "短期记忆概况"},
+    "dashboard.health.total":      {"en": "Total",                           "zh": "总条目"},
+    "dashboard.health.zombie":     {"en": "Zombie {pct}%",                   "zh": "僵尸 {pct}%"},
+    "dashboard.health.fp":         {"en": "False Pos. {pct}%",               "zh": "假阳性 {pct}%"},
+    "dashboard.health.fts_warn":   {
+        "en": "⚠️ FTS degradation mode detected — configure an embedding provider",
+        "zh": "⚠️ 检测到 FTS 降级模式，建议配置 embedding provider",
+    },
+
+    # E. Section 3：晋升前预检
+    "dashboard.promotion.title":         {"en": "Pre-promotion Audit",       "zh": "晋升前预检"},
+    "dashboard.promotion.meta":          {"en": "{total} candidates · Top {top_n} checked", "zh": "共 {total} 条候选 · 检查 Top {top_n}"},
+    "dashboard.promotion.pass":          {"en": "Pass",                      "zh": "通过"},
+    "dashboard.promotion.skip":          {"en": "Skip",                      "zh": "建议跳过"},
+    "dashboard.promotion.flag":          {"en": "Flag",                      "zh": "需关注"},
+    "dashboard.promotion.issues":        {"en": "Needs attention",           "zh": "需处理条目"},
+    "dashboard.promotion.llm_longterm":  {"en": "Long-term value {n}",       "zh": "长期价值 {n}"},
+    "dashboard.promotion.llm_onetime":   {"en": "One-time context {n}",      "zh": "一次性 {n}"},
+    "dashboard.promotion.llm_uncertain": {"en": "Uncertain {n}",             "zh": "不确定 {n}"},
+
+    # E. Section 4：SOUL.md
+    "dashboard.soul.title":         {"en": "SOUL.md Health",                 "zh": "SOUL.md 健康"},
+    "dashboard.soul.chars":         {"en": "{n} chars",                      "zh": "{n} 字符"},
+    "dashboard.soul.directives":    {"en": "{n} directive words",            "zh": "{n} 条强指令词"},
+    "dashboard.soul.no_sections":   {"en": "No standard sections",           "zh": "无标准 section"},
+
+    # E. Section 5：配置诊断
+    "dashboard.config.title":       {"en": "Config Diagnosis",               "zh": "配置诊断"},
+    "dashboard.config.all_good":    {"en": "Config healthy, no issues found","zh": "配置健康，未发现问题"},
+    "dashboard.config.issues_found":{"en": "{n} config issue(s) found",      "zh": "发现 {n} 个配置问题"},
+
+    # G. Footer
+    "dashboard.footer.generated_by": {"en": "Generated by",    "zh": "由"},
+    "dashboard.footer.report_issue": {"en": "Report an issue", "zh": "报告问题"},
+
     # ── promotion audit ────────────────────────────────────────────────────────
     "promo.header": {
         "en": "🛡️ Pre-Promotion Audit",

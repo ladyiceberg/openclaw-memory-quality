@@ -8,9 +8,9 @@ generate_demo_data.py · 生成演示用看板数据
 选项：
     --open      生成后自动在浏览器打开看板
     --lang      看板语言，默认 en（用于 README 截图）
-    --ws        写入的 workspace 路径，默认 /demo/openclaw-workspace
+    --ws        写入的 workspace 路径，默认自动按语言区分
 
-角色设定：
+角色设定（英文版）：
     Mavis，产品经理 + 业余开发者，用 OpenClaw 3 个月。
     记忆里有后端开发、产品工作、生活习惯、读书笔记、旅行踩坑…
 
@@ -19,6 +19,17 @@ generate_demo_data.py · 生成演示用看板数据
     - 一次 debug 会话留下了大量临时 recall
     - FTS 字面匹配带来了一批假阳性条目
     综合健康分约 70 分——有问题，但有具体的改善路径。
+
+角色设定（中文版）：
+    小萌，产品经理 + 副业创业者，住北京胡同四合院，用 OpenClaw 2 个月。
+    记忆里有植物养护、做饭研究、骑行路线、音乐节攻略、读书笔记、旅行踩坑…
+    技术内容偏少，主要靠 AI 辅助，不算程序员。
+
+    最近发生了什么：
+    - 旧内容排期表从 Google Doc 迁移到飞书，原链接全部废了
+    - 一次调试前端留下了 console.log，被 OpenClaw 顺手记进了短期记忆
+    - 短期记忆里攒了一批重复的「待办碎片」
+    综合健康分约 82 分——整体良好，小问题可以清理一下。
 """
 
 import argparse
@@ -382,11 +393,348 @@ CONFIG_PAYLOAD = {
 }
 
 
+# ════════════════════════════════════════════════════════════════════════════════
+# 中文数据集 · 小萌，北京产品经理 + 副业创业者
+# ════════════════════════════════════════════════════════════════════════════════
+
+# ── 中文 Section 1：长期记忆审计 ──────────────────────────────────────────────
+
+LONGTERM_ITEMS_ZH = [
+    # ── Keep 19 条 ─────────────────────────────────────────────────────────────
+
+    # 🌱 植物养护（3）
+    {
+        "snippet": "虎皮兰浇水原则：盆土完全干透再浇，宁可旱不能涝。冬天两周一次就够，浇多了根腐",
+        "source_path": "memory/2026-02-10.md", "source_start": 3, "source_end": 5,
+        "score": 0.941, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-02-10.md:3:5",
+    },
+    {
+        "snippet": "绿萝扦插方法：剪10cm枝条插水里，两周生根，换盆前先晾根1小时防腐烂。阳台北侧散光最适合",
+        "source_path": "memory/2026-03-05.md", "source_start": 7, "source_end": 10,
+        "score": 0.918, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-03-05.md:7:10",
+    },
+    {
+        "snippet": "多肉夏季休眠要遮光，放到散光处，停水或极少量水。强光直射+浇水=化水必死",
+        "source_path": "memory/2026-01-28.md", "source_start": 2, "source_end": 4,
+        "score": 0.897, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-01-28.md:2:4",
+    },
+
+    # 🍳 做饭研究（3）
+    {
+        "snippet": "越南春卷皮要用温水泡5秒，不能泡软再包——半硬时下馅，包完还会继续软。泡太软=破皮漏馅",
+        "source_path": "memory/2026-03-18.md", "source_start": 1, "source_end": 4,
+        "score": 0.934, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-03-18.md:1:4",
+    },
+    {
+        "snippet": "炒土豆丝不粘连的秘诀：切完马上泡淡盐水10分钟，沥干，锅要够热，全程大火快炒不超过3分钟",
+        "source_path": "memory/2026-02-22.md", "source_start": 8, "source_end": 11,
+        "score": 0.912, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-02-22.md:8:11",
+    },
+    {
+        "snippet": "焦糖布丁的水浴温度：150°C烤40分钟，水盘水深2cm。烤箱温度偏高会出气泡，布丁不够嫩滑",
+        "source_path": "memory/2026-01-14.md", "source_start": 5, "source_end": 8,
+        "score": 0.886, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-01-14.md:5:8",
+    },
+
+    # 🚴 骑行（2）
+    {
+        "snippet": "从鼓楼骑到奥森公园约11公里，走鼓楼大街→北四环辅路→林萃路。建议早7点前出发，躲早高峰堵车",
+        "source_path": "memory/2026-03-12.md", "source_start": 2, "source_end": 5,
+        "score": 0.903, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-03-12.md:2:5",
+    },
+    {
+        "snippet": "骑行换挡时机：坡前提前降挡，不要在坡中换——链条承压时换挡伤齿盘。平路踏频保持70-80rpm最省力",
+        "source_path": "memory/2026-02-28.md", "source_start": 11, "source_end": 14,
+        "score": 0.871, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-02-28.md:11:14",
+    },
+
+    # 🎵 音乐/音乐节（2）
+    {
+        "snippet": "草莓音乐节买票策略：预售第一批最便宜，但阵容不全。第二批价格涨30%但能看完整阵容再决定。",
+        "source_path": "memory/2026-03-25.md", "source_start": 1, "source_end": 3,
+        "score": 0.858, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-03-25.md:1:3",
+    },
+    {
+        "snippet": "现场看演出护耳塞推荐Loop Experience：降噪25dB、保留人声和乐器层次，不像普通棉塞听起来像地下室",
+        "source_path": "memory/2026-02-16.md", "source_start": 6, "source_end": 8,
+        "score": 0.843, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-02-16.md:6:8",
+    },
+
+    # ✈️ 旅行（2）
+    {
+        "snippet": "大理古城住宿选人民路以北、洱海方向——远离酒吧街但步行可达。避开国庆/五一，平时房价直降60%",
+        "source_path": "memory/travel/dali-2026.md", "source_start": 3, "source_end": 7,
+        "score": 0.895, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/travel/dali-2026.md:3:7",
+    },
+    {
+        "snippet": "越南河内机场到市区：Grab打车约15万越南盾（约45元），比机场固定价出租车便宜一半",
+        "source_path": "memory/travel/hanoi-2025.md", "source_start": 1, "source_end": 4,
+        "score": 0.874, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/travel/hanoi-2025.md:1:4",
+    },
+
+    # 📚 读书/学习（3）
+    {
+        "snippet": "《置身事内》：理解中国经济要先理解地方政府的激励机制——土地财政是理解一切的钥匙",
+        "source_path": "memory/2026-03-20.md", "source_start": 4, "source_end": 7,
+        "score": 0.921, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-03-20.md:4:7",
+    },
+    {
+        "snippet": "《被讨厌的勇气》：课题分离是核心——别人如何评价你，是别人的课题，不是你的。焦虑来自把别人的课题当自己的",
+        "source_path": "memory/2026-02-14.md", "source_start": 9, "source_end": 12,
+        "score": 0.908, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-02-14.md:9:12",
+    },
+    {
+        "snippet": "《纳瓦尔宝典》：做独一无二的自己比努力工作更重要。杠杆来源：代码、媒体、资本——前两种可以不睡觉工作",
+        "source_path": "memory/2026-01-20.md", "source_start": 6, "source_end": 9,
+        "score": 0.887, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-01-20.md:6:9",
+    },
+
+    # 🌟 个人成长/习惯（2）
+    {
+        "snippet": "晨间写作效果好于晚上：睡前大脑在整理信息，早起后想法更清晰，杂念少。目标是每天早7点写30分钟",
+        "source_path": "memory/2026-03-02.md", "source_start": 3, "source_end": 5,
+        "score": 0.869, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-03-02.md:3:5",
+    },
+    {
+        "snippet": "定期复盘用「三栏法」：做得好的/做得差的/下周要改变的。每次控制在15分钟以内，否则变成自我批判",
+        "source_path": "memory/2026-01-25.md", "source_start": 1, "source_end": 4,
+        "score": 0.852, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-01-25.md:1:4",
+    },
+
+    # 💡 副业/创业（2）
+    {
+        "snippet": "小红书选品逻辑：搜索词有流量但商业化程度低（笔记少广告）= 机会窗口。反过来全是广告说明红海了",
+        "source_path": "memory/2026-03-28.md", "source_start": 2, "source_end": 5,
+        "score": 0.916, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-03-28.md:2:5",
+    },
+    {
+        "snippet": "一人公司定价要大胆：价格低会吸引最挑剔的客户，价格高反而省心。服务定价不低于同等时间打工收入的3倍",
+        "source_path": "memory/2026-02-08.md", "source_start": 14, "source_end": 17,
+        "score": 0.893, "v1_status": "exists", "v3_status": "ok", "action_hint": "keep",
+        "promotion_key": "memory:memory/2026-02-08.md:14:17",
+    },
+
+    # ── Review 3 条（来源不确定）──────────────────────────────────────────────
+
+    {
+        "snippet": "Q2内容排期模板：选题/截止日/发布平台/数据目标。每周一填下周计划，周五复盘上周数据",
+        "source_path": "content-plan/q2-schedule.md", "source_start": 1, "source_end": 12,
+        "score": 0.841, "v1_status": "possibly_moved", "v3_status": "ok", "action_hint": "review",
+        "promotion_key": "memory:content-plan/q2-schedule.md:1:12",
+    },
+    {
+        "snippet": "合伙人沟通原则：有分歧先私下说，不在群里当众质疑。公开场合分歧会固化立场，越说越硬",
+        "source_path": "memory/2026-01-12.md", "source_start": 8, "source_end": 11,
+        "score": 0.822, "v1_status": "possibly_moved", "v3_status": "ok", "action_hint": "review",
+        "promotion_key": "memory:memory/2026-01-12.md:8:11",
+    },
+    {
+        "snippet": "北京朝阳区亲子餐厅推荐：「呆呆屋」适合4-8岁，室内游乐区大，人均80，周末要提前1周订",
+        "source_path": "memory/2025-12-20.md", "source_start": 2, "source_end": 5,
+        "score": 0.796, "v1_status": "possibly_moved", "v3_status": "ok", "action_hint": "review",
+        "promotion_key": "memory:memory/2025-12-20.md:2:5",
+    },
+
+    # ── Delete 3 条 ──────────────────────────────────────────────────────────
+
+    {
+        "snippet": "Google Doc内容排期表链接：https://docs.google.com/spreadsheets/d/1Bx9... （已迁飞书，链接废弃）",
+        "source_path": "content-plan/q1-links.md", "source_start": 3, "source_end": 4,
+        "score": 0.712, "v1_status": "deleted", "v3_status": "ok", "action_hint": "delete",
+        "promotion_key": "memory:content-plan/q1-links.md:3:4",
+    },
+    {
+        "snippet": "Google Doc内容排期备份入口 - Q1旧版，Q2已重建飞书版本，此条目重复且来源已删除",
+        "source_path": "content-plan/q1-links.md", "source_start": 5, "source_end": 6,
+        "score": 0.698, "v1_status": "deleted", "v3_status": "duplicate_loser", "action_hint": "delete",
+        "promotion_key": "memory:content-plan/q1-links.md:5:6",
+    },
+    {
+        "snippet": "console.log('debug: userId=', userId, 'token=', token.slice(0,8))",
+        "source_path": "webapp/src/auth.js", "source_start": 142, "source_end": 142,
+        "score": 0.581, "v1_status": "exists", "v3_status": "ok", "action_hint": "delete",
+        "promotion_key": "memory:webapp/src/auth.js:142:142",
+    },
+]
+
+LONGTERM_PAYLOAD_ZH = {
+    "total_items": len(LONGTERM_ITEMS_ZH),
+    "sections_count": 4,
+    "items_by_action": {"keep": 19, "review": 3, "delete": 3},
+    "non_standard_sections": 0,
+    "memory_md_mtime": _ts(5_400),   # ~1.5h 前审计
+    "items": LONGTERM_ITEMS_ZH,
+    "llm_eval": {
+        "validity": {
+            # keep 条目
+            "memory:memory/2026-02-10.md:3:5":       {"verdict": "still_valid", "reason": "植物养护经验，长期有效"},
+            "memory:memory/2026-03-05.md:7:10":      {"verdict": "still_valid", "reason": "扦插技巧，个人经验"},
+            "memory:memory/2026-01-28.md:2:4":       {"verdict": "still_valid", "reason": "多肉护理知识，常青"},
+            "memory:memory/2026-03-18.md:1:4":       {"verdict": "still_valid", "reason": "烹饪技巧，个人习惯"},
+            "memory:memory/2026-02-22.md:8:11":      {"verdict": "still_valid", "reason": "家常菜技法，长期适用"},
+            "memory:memory/2026-01-14.md:5:8":       {"verdict": "still_valid", "reason": "烘焙参数，可复现"},
+            "memory:memory/2026-03-12.md:2:5":       {"verdict": "still_valid", "reason": "北京路线，稳定有效"},
+            "memory:memory/2026-02-28.md:11:14":     {"verdict": "still_valid", "reason": "骑行技巧，通用"},
+            "memory:memory/2026-03-25.md:1:3":       {"verdict": "still_valid", "reason": "购票策略，每年适用"},
+            "memory:memory/2026-02-16.md:6:8":       {"verdict": "still_valid", "reason": "设备推荐，个人偏好"},
+            "memory:memory/travel/dali-2026.md:3:7": {"verdict": "still_valid", "reason": "旅行经验，近期有效"},
+            "memory:memory/travel/hanoi-2025.md:1:4":{"verdict": "still_valid", "reason": "交通信息，短期有效"},
+            "memory:memory/2026-03-20.md:4:7":       {"verdict": "still_valid", "reason": "读书洞见，常青"},
+            "memory:memory/2026-02-14.md:9:12":      {"verdict": "still_valid", "reason": "心理学原则，长期有效"},
+            "memory:memory/2026-01-20.md:6:9":       {"verdict": "still_valid", "reason": "创业思维，个人成长"},
+            "memory:memory/2026-03-02.md:3:5":       {"verdict": "still_valid", "reason": "个人习惯，持续践行"},
+            "memory:memory/2026-01-25.md:1:4":       {"verdict": "still_valid", "reason": "工作方法，稳定有效"},
+            "memory:memory/2026-03-28.md:2:5":       {"verdict": "still_valid", "reason": "平台运营策略，近期有效"},
+            "memory:memory/2026-02-08.md:14:17":     {"verdict": "still_valid", "reason": "定价逻辑，个人信条"},
+            # review 条目
+            "memory:content-plan/q2-schedule.md:1:12": {"verdict": "uncertain",    "reason": "排期文件已迁飞书，原路径可能失效"},
+            "memory:memory/2026-01-12.md:8:11":         {"verdict": "still_valid", "reason": "人际沟通原则，长期有效"},
+            "memory:memory/2025-12-20.md:2:5":          {"verdict": "still_valid", "reason": "本地生活信息，可能有变"},
+        },
+        "merge_suggestions": [
+            {
+                "item_a": "memory:content-plan/q1-links.md:3:4",
+                "item_b": "memory:content-plan/q1-links.md:5:6",
+                "suggestion": "两条都指向已废弃的 Google Doc 排期链接，可以一并删除",
+            }
+        ],
+    },
+}
+
+
+# ── 中文 Section 2：短期记忆健康检查 ──────────────────────────────────────────
+
+HEALTH_PAYLOAD_ZH = {
+    "shortterm_total":   187,
+    "zombie_count":       11,
+    "zombie_ratio":    0.059,
+    "fp_count":           18,
+    "fp_ratio":        0.096,
+    "retrieval_health":   84,
+    "promotion_risk":     22,
+    "fts_degradation":  False,
+    "longterm_sections":   4,
+    "longterm_items":     25,
+}
+
+
+# ── 中文 Section 3：晋升前预检 ────────────────────────────────────────────────
+
+PROMOTION_PAYLOAD_ZH = {
+    "total_unpromotted": 23,
+    "top_n": 8,
+    "pass_count":  5,
+    "skip_count":  2,
+    "flag_count":  1,
+    "candidates": [
+        # Pass 5 条
+        {
+            "path": "memory/2026-04-14.md", "start": 2, "end": 5,
+            "composite": 0.856, "verdict": "pass",
+            "skip_reason": None, "flag_reason": None,
+        },
+        {
+            "path": "memory/2026-04-13.md", "start": 6, "end": 9,
+            "composite": 0.831, "verdict": "pass",
+            "skip_reason": None, "flag_reason": None,
+        },
+        {
+            "path": "memory/2026-04-11.md", "start": 1, "end": 4,
+            "composite": 0.812, "verdict": "pass",
+            "skip_reason": None, "flag_reason": None,
+        },
+        {
+            "path": "memory/2026-04-10.md", "start": 14, "end": 17,
+            "composite": 0.794, "verdict": "pass",
+            "skip_reason": None, "flag_reason": None,
+        },
+        {
+            "path": "memory/2026-04-08.md", "start": 9, "end": 12,
+            "composite": 0.778, "verdict": "pass",
+            "skip_reason": None, "flag_reason": None,
+        },
+        # Skip 2 条
+        {
+            "path": "webapp/src/auth.js", "start": 142, "end": 142,
+            "composite": 0.701, "verdict": "skip",
+            "skip_reason": "debug_code", "flag_reason": None,
+        },
+        {
+            "path": "content-plan/q1-links.md", "start": 1, "end": 8,
+            "composite": 0.673, "verdict": "skip",
+            "skip_reason": "source_deleted", "flag_reason": None,
+        },
+        # Flag 1 条
+        {
+            "path": "memory/2026-04-06.md", "start": 21, "end": 24,
+            "composite": 0.638, "verdict": "flag",
+            "skip_reason": None, "flag_reason": "potential_false_positive",
+        },
+    ],
+    "llm_eval": {
+        "long_term_count":  4,
+        "one_time_count":   1,
+        "uncertain_count":  0,
+    },
+}
+
+
+# ── 中文 Section 4：SOUL.md 快照 ──────────────────────────────────────────────
+
+SOUL_PAYLOAD_ZH = {
+    "char_count":      2341,
+    "content_hash":    "d7e2a419fc8b3051",
+    "directive_count": 5,
+    "sections":        ["核心认知", "边界设定", "行动风格", "人际关系", "连续性"],
+    "risk_level":      "ok",
+}
+
+
+# ── 中文 Section 5：配置诊断 ──────────────────────────────────────────────────
+
+CONFIG_PAYLOAD_ZH = {
+    "all_good": True,
+    "issues": [],
+}
+
+
 # ── 主函数 ────────────────────────────────────────────────────────────────────
 
 def generate(workspace: str, lang: str, open_browser: bool) -> None:
     db_path = Path.home() / ".openclaw-memhealth" / "session.db"
     db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 根据语言选择数据集
+    if lang == "zh":
+        lt_payload  = LONGTERM_PAYLOAD_ZH
+        h_payload   = HEALTH_PAYLOAD_ZH
+        pr_payload  = PROMOTION_PAYLOAD_ZH
+        so_payload  = SOUL_PAYLOAD_ZH
+        cfg_payload = CONFIG_PAYLOAD_ZH
+    else:
+        lt_payload  = LONGTERM_PAYLOAD
+        h_payload   = HEALTH_PAYLOAD
+        pr_payload  = PROMOTION_PAYLOAD
+        so_payload  = SOUL_PAYLOAD
+        cfg_payload = CONFIG_PAYLOAD
 
     print(f"Writing demo data to: {db_path}")
     print(f"Workspace key:        {workspace}")
@@ -398,47 +746,47 @@ def generate(workspace: str, lang: str, open_browser: bool) -> None:
     save_audit_report(
         report_id=report_id,
         workspace=workspace,
-        total_items=LONGTERM_PAYLOAD["total_items"],
-        payload=LONGTERM_PAYLOAD,
+        total_items=lt_payload["total_items"],
+        payload=lt_payload,
         db_path=db_path,
     )
-    print(f"✅ Longterm audit    — {LONGTERM_PAYLOAD['total_items']} items "
-          f"(keep={LONGTERM_PAYLOAD['items_by_action']['keep']}, "
-          f"review={LONGTERM_PAYLOAD['items_by_action']['review']}, "
-          f"delete={LONGTERM_PAYLOAD['items_by_action']['delete']})")
+    print(f"✅ Longterm audit    — {lt_payload['total_items']} items "
+          f"(keep={lt_payload['items_by_action']['keep']}, "
+          f"review={lt_payload['items_by_action']['review']}, "
+          f"delete={lt_payload['items_by_action']['delete']})")
 
     # Section 2: health snapshot
     import time as _time
     _time.sleep(0.002)   # ensure distinct timestamps
-    save_health_snapshot(workspace=workspace, payload=HEALTH_PAYLOAD, db_path=db_path)
-    print(f"✅ Health snapshot   — {HEALTH_PAYLOAD['shortterm_total']} shortterm entries, "
-          f"RH={HEALTH_PAYLOAD['retrieval_health']}, PR={HEALTH_PAYLOAD['promotion_risk']}")
+    save_health_snapshot(workspace=workspace, payload=h_payload, db_path=db_path)
+    print(f"✅ Health snapshot   — {h_payload['shortterm_total']} shortterm entries, "
+          f"RH={h_payload['retrieval_health']}, PR={h_payload['promotion_risk']}")
 
     # Section 3: promotion snapshot
     _time.sleep(0.002)
-    save_promotion_snapshot(workspace=workspace, payload=PROMOTION_PAYLOAD, db_path=db_path)
-    print(f"✅ Promotion audit   — pass={PROMOTION_PAYLOAD['pass_count']}, "
-          f"skip={PROMOTION_PAYLOAD['skip_count']}, flag={PROMOTION_PAYLOAD['flag_count']}")
+    save_promotion_snapshot(workspace=workspace, payload=pr_payload, db_path=db_path)
+    print(f"✅ Promotion audit   — pass={pr_payload['pass_count']}, "
+          f"skip={pr_payload['skip_count']}, flag={pr_payload['flag_count']}")
 
     # Section 4: soul snapshot
     _time.sleep(0.002)
     save_soul_snapshot(
         workspace=workspace,
-        char_count=SOUL_PAYLOAD["char_count"],
-        content_hash=SOUL_PAYLOAD["content_hash"],
-        directive_count=SOUL_PAYLOAD["directive_count"],
-        sections=SOUL_PAYLOAD["sections"],
-        risk_level=SOUL_PAYLOAD["risk_level"],
+        char_count=so_payload["char_count"],
+        content_hash=so_payload["content_hash"],
+        directive_count=so_payload["directive_count"],
+        sections=so_payload["sections"],
+        risk_level=so_payload["risk_level"],
         db_path=db_path,
     )
-    print(f"✅ Soul snapshot     — risk_level={SOUL_PAYLOAD['risk_level']}, "
-          f"chars={SOUL_PAYLOAD['char_count']}")
+    print(f"✅ Soul snapshot     — risk_level={so_payload['risk_level']}, "
+          f"chars={so_payload['char_count']}")
 
     # Section 5: config snapshot
     _time.sleep(0.002)
-    save_config_snapshot(workspace=workspace, payload=CONFIG_PAYLOAD, db_path=db_path)
-    issue_codes = [i["code"] for i in CONFIG_PAYLOAD["issues"]]
-    print(f"✅ Config snapshot   — issues={issue_codes}")
+    save_config_snapshot(workspace=workspace, payload=cfg_payload, db_path=db_path)
+    issue_codes = [i["code"] for i in cfg_payload["issues"]]
+    print(f"✅ Config snapshot   — issues={issue_codes if issue_codes else 'none'}")
 
     # 读回并生成 HTML
     print()
@@ -474,14 +822,22 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate demo dashboard data")
     parser.add_argument("--open",   action="store_true", help="Open dashboard in browser after generation")
     parser.add_argument("--lang",   default="en",        help="Dashboard language: en or zh (default: en)")
-    parser.add_argument("--ws",     default="/demo/openclaw-workspace", help="Demo workspace path")
+    parser.add_argument("--ws",     default=None,        help="Demo workspace path (default: auto by lang)")
     args = parser.parse_args()
 
     if args.lang not in ("en", "zh"):
         print(f"Error: --lang must be 'en' or 'zh', got '{args.lang}'")
         sys.exit(1)
 
-    generate(workspace=args.ws, lang=args.lang, open_browser=args.open)
+    # workspace 默认按语言区分，避免中英文数据互相覆盖
+    if args.ws is not None:
+        workspace = args.ws
+    elif args.lang == "zh":
+        workspace = "/demo/openclaw-workspace-zh"
+    else:
+        workspace = "/demo/openclaw-workspace"
+
+    generate(workspace=workspace, lang=args.lang, open_browser=args.open)
 
 
 if __name__ == "__main__":

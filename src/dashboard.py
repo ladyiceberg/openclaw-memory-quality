@@ -1082,6 +1082,7 @@ def open_dashboard(
     workspace: str,
     output_path: Optional[Path] = None,
     db_path: Optional[Path] = None,
+    lang: str = "",
 ) -> Path:
     """
     读取 session_store 数据，生成 Dashboard HTML，用系统浏览器打开。
@@ -1090,6 +1091,7 @@ def open_dashboard(
         workspace   : workspace 路径
         output_path : HTML 文件保存路径（默认 ~/.openclaw-memhealth/dashboard.html）
         db_path     : 测试用，覆盖默认 DB 路径
+        lang        : 语言代码 "en"/"zh"，不传则跟随 detect_language()
 
     Returns:
         生成的 HTML 文件路径
@@ -1100,7 +1102,7 @@ def open_dashboard(
         output_path = output_dir / "dashboard.html"
 
     data = load_dashboard_data(workspace, db_path=db_path)
-    html = generate_dashboard_html(data, workspace=workspace)
+    html = generate_dashboard_html(data, workspace=workspace, lang=lang)
     output_path.write_text(html, encoding="utf-8")
     webbrowser.open(f"file://{output_path}")
 

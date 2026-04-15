@@ -1,53 +1,27 @@
 ---
 name: memory-check
-description: >
-  Quickly scan OpenClaw memory system health: short-term recall stats, zombie
-  entries, false-positive signals, and long-term memory overview. No API key
-  needed. Trigger on: memory health, check memory, memory status, memory stats,
-  记忆健康, 记忆状态, 检查记忆, 记忆统计.
-allowed-tools: mcp__openclaw-memhealth__memory_health_check_oc
-argument-hint: "[workspace_dir]"
+description: Quickly scan OpenClaw memory system health and summarize findings in plain language. Use this skill whenever the user asks about memory health, memory status, memory stats, wants to know if their OpenClaw memory is working well, or uses phrases like "check memory", "memory health", "how is my memory", "记忆健康", "检查记忆", "记忆状态", "记忆统计". Always use this skill — don't try to answer memory health questions without it.
 ---
 
-# Memory Check — OpenClaw 记忆系统快速体检
+# Memory Check
 
-快速扫描 OpenClaw 的记忆系统，输出健康摘要。纯只读，无任何写操作。
+Run `memory_health_check_oc` and translate the output into a plain-language summary.
 
-## 使用方式
+## Steps
 
-直接运行，无需参数：
+1. Call `memory_health_check_oc` (pass `workspace_dir` if the user specified one)
+2. Read the raw report and identify the most important finding
+3. Give a one-sentence verdict first: healthy / minor issues / needs attention
+4. Show the full report
+5. If there are problems, suggest the next action
 
-```
-/memory-check
-```
+## When to suggest follow-up
 
-指定 workspace（多 agent 场景）：
+- Zombie entries > 10% or false-positive signals > 15% → suggest `/memory-cleanup`
+- Retrieval quality looks degraded → suggest `/memory-diagnose`
+- MEMORY.md has 200+ entries → suggest running a longterm audit
+- Everything looks fine → say so, no action needed
 
-```
-/memory-check /path/to/workspace
-```
+## Notes
 
-## 运行步骤
-
-1. 调用 `memory_health_check_oc` 获取原始报告
-2. 用一句话摘要告诉用户最重要的发现
-3. 如果发现问题，给出下一步建议（`/memory-diagnose` 或 `/memory-cleanup`）
-
-## 输出风格
-
-- 先给结论（一句话）：系统健康 / 有轻微问题 / 需要关注
-- 然后展示工具返回的详细报告
-- 最后给行动建议（仅在有问题时）
-
-## 判断逻辑
-
-| 情况 | 建议 |
-|------|------|
-| 僵尸条目 > 10% | 建议运行 `/memory-cleanup` |
-| 假阳性嫌疑 > 15% | 建议运行 `/memory-diagnose` 了解详情 |
-| MEMORY.md 条目 > 200 | 建议运行 `/memory-cleanup` 审计长期记忆 |
-| 一切正常 | 告知用户系统健康，无需操作 |
-
-## 注意
-
-不需要 API key。运行速度很快（通常 < 1 秒）。
+No API key required. Fast (< 1s). Read-only — never modifies any files.

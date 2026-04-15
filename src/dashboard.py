@@ -13,7 +13,6 @@ dashboard.py · OpenClaw Memory Health Dashboard HTML 生成器
   - 所有颜色来自苹果官方 HIG 系统色（2024）
 """
 
-import json
 import math
 import time
 import webbrowser
@@ -273,7 +272,6 @@ def _render_longterm(longterm: Optional[tuple]) -> str:
     delete_n   = by_action.get("delete", 0)
     items      = payload.get("items", [])
     llm_eval   = payload.get("llm_eval")
-    mtime      = payload.get("memory_md_mtime")
 
     # LLM eval badge
     llm_badge = ""
@@ -323,7 +321,7 @@ def _render_longterm(longterm: Optional[tuple]) -> str:
         bg      = _action_bg(action)
         icon    = _action_icon(action)
         label   = _action_label_zh(action)
-        return f"""<div class="entry-card" onclick="this.classList.toggle('expanded')">
+        return f"""<div class="entry-card">
       <div class="entry-header">
         <div class="entry-left">
           <span class="entry-badge" style="color:{color};background:{bg}">{icon} {label}</span>
@@ -925,7 +923,6 @@ def generate_dashboard_html(
 
     # 综合健康分
     health_score = compute_health_score(longterm, health, soul)
-    health_color = _health_color(health_score)
 
     # Header：取所有 section 中最新的 checked_at
     timestamps = []

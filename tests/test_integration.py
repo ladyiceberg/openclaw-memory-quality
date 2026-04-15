@@ -7,6 +7,7 @@ test_integration.py · 集成测试
 from pathlib import Path
 from typing import List, Optional
 import tempfile
+from unittest.mock import patch
 
 import pytest
 
@@ -460,20 +461,56 @@ class TestLongtermAuditWithFixtures:
         assert report_id is None
         assert "Traceback" not in text
 
-    def test_use_llm_true_shows_placeholder(self):
-        """use_llm=True 在 Phase 1 显示占位提示，不崩溃。"""
+    def test_use_llm_true_without_api_key_shows_warning(self):
+        """use_llm=True 但无 API key → 显示友好提示，仍然返回 report_id。"""
         if not self.REAL_MEMORY.exists():
             pytest.skip("tests/fixtures/real 不存在")
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            db = Path(tmpdir) / "test.db"
-            report_id, text = run_longterm_audit(
-                self._real_probe(), use_llm=True, db_path=db
-            )
+        import os
+        # 清除所有可能存在的 API key 环境变量
+        env_keys = ["OPENAI_API_KEY", "KIMI_API_KEY", "MINIMAX_API_KEY", "ANTHROPIC_API_KEY"]
+        with patch.dict(os.environ, {k: "" for k in env_keys}, clear=False):
+            # 同时 patch config 避免读到配置文件里的 key
+            with patch("llm_client.create_client", side_effect=ValueError("no api key")):
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    db = Path(tmpdir) / "test.db"
+                    report_id, text = run_longterm_audit(
+                        self._real_probe(), use_llm=True, db_path=db
+                    )
 
-        # Phase 1 不支持 LLM，但不崩溃，仍然返回 report_id
         assert report_id is not None
         assert "Traceback" not in text
+        # 应该有 API key 相关的提示
+        assert "API" in text or "api" in text.lower() or "Key" in text
+
+    def test_use_llm_true_with_mock_llm_upgrades_actions(self):
+        """use_llm=True 且 mock LLM 返回判断时，action_hint 正确升级。"""
+        if not self.REAL_MEMORY.exists():
+            pytest.skip("tests/fixtures/real 不存在")
+
+        from unittest.mock import MagicMock
+        from src.session_store import load_audit_report
+
+        # 构造 mock LLM：返回 still_valid
+        mock_llm = MagicMock()
+        mock_llm.complete.return_value = MagicMock(
+            parsed={"verdict": "still_valid", "reason": "结论仍成立"}
+        )
+
+        with patch("llm_client.create_client", return_value=mock_llm):
+            with tempfile.TemporaryDirectory() as tmpdir:
+                db = Path(tmpdir) / "test.db"
+                report_id, text = run_longterm_audit(
+                    self._real_probe(), use_llm=True, db_path=db
+                )
+                payload = load_audit_report(report_id, db_path=db)
+
+        assert report_id is not None
+        assert "Traceback" not in text
+        # LLM 评估结果应出现在输出里
+        assert "LLM" in text or "语义" in text
+        # payload 里应有 llm_eval 字段（即使 review 条目为 0）
+        assert payload is not None
 
 
 # ── test_retrieval_diagnose_with_fixtures ─────────────────────────────────────

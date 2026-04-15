@@ -214,6 +214,46 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "(use_llm=True not yet implemented in Phase 1)",
         "zh": "（use_llm=True 功能在 Phase 1 暂未实现）",
     },
+    "audit.llm_header": {
+        "en": "🤖 LLM Semantic Evaluation ({n} review entries)",
+        "zh": "🤖 LLM 语义评估结果（针对 {n} 条 review 条目）",
+    },
+    "audit.llm_validity_header": {
+        "en": "Semantic Validity Review:",
+        "zh": "语义有效性复审：",
+    },
+    "audit.llm_still_valid": {
+        "en": "  Still valid (still_valid): {n}  → upgraded to keep",
+        "zh": "  仍然有效（still_valid）：  {n} 条 → 升级为 keep",
+    },
+    "audit.llm_outdated": {
+        "en": "  Semantically outdated (outdated): {n}  → upgraded to delete",
+        "zh": "  已语义过时（outdated）：    {n} 条 → 升级为 delete",
+    },
+    "audit.llm_uncertain": {
+        "en": "  Uncertain (uncertain): {n}  → stays review, needs manual judgment",
+        "zh": "  上下文不足（uncertain）：   {n} 条 → 维持 review，需人工判断",
+    },
+    "audit.llm_dedup_header": {
+        "en": "🔗 Semantic Dedup Suggestions ({n} potential duplicate pairs):",
+        "zh": "🔗 语义去重建议（发现 {n} 对潜在重复）：",
+    },
+    "audit.llm_dedup_pair": {
+        "en": "  Pair {i}: {a} ↔ {b}\n        Merge suggestion: {suggestion}",
+        "zh": "  对 {i}：{a} ↔ {b}\n        建议合并为：{suggestion}",
+    },
+    "audit.llm_no_dedup": {
+        "en": "  No semantic duplicates found.",
+        "zh": "  未发现语义重复条目。",
+    },
+    "audit.llm_error": {
+        "en": "⚠️  LLM evaluation encountered errors: {msg}",
+        "zh": "⚠️  LLM 评估过程中有错误：{msg}",
+    },
+    "audit.llm_cost_warning": {
+        "en": "⚠️  No API key configured. Set OPENAI_API_KEY / KIMI_API_KEY / ANTHROPIC_API_KEY to enable LLM evaluation.",
+        "zh": "⚠️  未配置 API Key，无法运行 LLM 评估。请设置 OPENAI_API_KEY / KIMI_API_KEY / ANTHROPIC_API_KEY。",
+    },
 
     # ── retrieval diagnose ────────────────────────────────────────────────────
     "diagnose.header": {

@@ -257,14 +257,14 @@ def _placeholder_card(title: str, hint: str) -> str:
   </div>
 </div>"""
 
-
 # ── Section 1：长期记忆 ────────────────────────────────────────────────────────
 
-def _render_longterm(longterm: Optional[tuple]) -> str:
+def _render_longterm(longterm: Optional[tuple], lang: str = "") -> str:
+    from i18n import t
     if longterm is None:
         return _placeholder_card(
-            "长期记忆",
-            "运行 <code>/memory-cleanup</code> 获取长期记忆分析"
+            t("dashboard.placeholder.longterm.title", lang=lang),
+            t("dashboard.placeholder.longterm.hint",  lang=lang),
         )
 
     _, payload = longterm
@@ -289,16 +289,19 @@ def _render_longterm(longterm: Optional[tuple]) -> str:
         blue       = COLORS["blue"]
         merge_span = (
             f'<span class="sep">·</span>'
-            f'<span style="color:{blue}">合并建议 {merge_n}</span>'
+            f'<span style="color:{blue}">'
+            f'{t("dashboard.longterm.llm_merge", lang=lang, n=merge_n)}</span>'
         ) if merge_n > 0 else ""
         llm_badge = (
             f'<div class="llm-badge">'
             f'<span class="llm-tag">🤖 LLM</span>'
-            f'<span>有效 {still_n}</span>'
+            f'<span>{t("dashboard.longterm.llm_valid", lang=lang, n=still_n)}</span>'
             f'<span class="sep">·</span>'
-            f'<span style="color:{COLORS["red"]}">过时 {outdated_n}</span>'
+            f'<span style="color:{COLORS["red"]}">'
+            f'{t("dashboard.longterm.llm_outdated", lang=lang, n=outdated_n)}</span>'
             f'<span class="sep">·</span>'
-            f'<span style="color:{COLORS["gray"]}">不确定 {uncertain_n}</span>'
+            f'<span style="color:{COLORS["gray"]}">'
+            f'{t("dashboard.longterm.llm_uncertain", lang=lang, n=uncertain_n)}</span>'
             f'{merge_span}'
             f'</div>'
         )
@@ -306,7 +309,11 @@ def _render_longterm(longterm: Optional[tuple]) -> str:
     # 非标准段落警告
     non_std_warn = ""
     if non_std > 0:
-        non_std_warn = f'<div class="warn-row">⚠️ {non_std} 个非标准段落（用户手写内容，不参与清理）</div>'
+        non_std_warn = (
+            f'<div class="warn-row">'
+            f'{t("dashboard.longterm.non_std_warn", lang=lang, n=non_std)}'
+            f'</div>'
+        )
 
     # 条目详情
     delete_items = [i for i in items if i.get("action_hint") == "delete"]
@@ -319,13 +326,13 @@ def _render_longterm(longterm: Optional[tuple]) -> str:
         source  = item.get("source_path", "")
         start   = item.get("source_start", 0)
         end     = item.get("source_end", 0)
-        v1      = _v1_status(item.get("v1_status", ""))
-        v3      = _v3_status(item.get("v3_status", ""))
+        v1      = _v1_status(item.get("v1_status", ""), lang=lang)
+        v3      = _v3_status(item.get("v3_status", ""), lang=lang)
         score   = item.get("score", 0.0)
         color   = _action_color(action)
         bg      = _action_bg(action)
         icon    = _action_icon(action)
-        label   = _action_label(action)
+        label   = _action_label(action, lang=lang)
         return f"""<div class="entry-card">
       <div class="entry-header">
         <div class="entry-left">
@@ -340,10 +347,10 @@ def _render_longterm(longterm: Optional[tuple]) -> str:
         </div>
       </div>
       <div class="entry-detail">
-        <div class="detail-row"><span class="detail-label">来源</span> {source}:{start}-{end}</div>
-        <div class="detail-row"><span class="detail-label">文件状态</span> {v1}</div>
-        <div class="detail-row"><span class="detail-label">重复检测</span> {v3}</div>
-        <div class="detail-row"><span class="detail-label">晋升分</span> {score:.3f}</div>
+        <div class="detail-row"><span class="detail-label">{t("dashboard.longterm.detail_source", lang=lang)}</span> {source}:{start}-{end}</div>
+        <div class="detail-row"><span class="detail-label">{t("dashboard.longterm.detail_file",   lang=lang)}</span> {v1}</div>
+        <div class="detail-row"><span class="detail-label">{t("dashboard.longterm.detail_dup",    lang=lang)}</span> {v3}</div>
+        <div class="detail-row"><span class="detail-label">{t("dashboard.longterm.detail_score",  lang=lang)}</span> {score:.3f}</div>
       </div>
     </div>"""
 
@@ -364,27 +371,27 @@ def _render_longterm(longterm: Optional[tuple]) -> str:
     <div class="group-body">{rows}</div>
   </details>"""
 
-    delete_group = _group("建议删除", "delete", delete_items, default_open=True)
-    review_group = _group("建议复查", "review", review_items, default_open=True)
-    keep_group   = _group("状态良好", "keep",   keep_items,   default_open=False)
+    delete_group = _group(t("dashboard.longterm.group_delete", lang=lang), "delete", delete_items, default_open=True)
+    review_group = _group(t("dashboard.longterm.group_review", lang=lang), "review", review_items, default_open=True)
+    keep_group   = _group(t("dashboard.longterm.group_keep",   lang=lang), "keep",   keep_items,   default_open=False)
 
     return f"""<div class="section-card">
   <div class="section-header">
-    <span class="section-title">长期记忆</span>
-    <span class="section-meta">{sections_n} 个 section · {total} 条记忆</span>
+    <span class="section-title">{t("dashboard.longterm.title", lang=lang)}</span>
+    <span class="section-meta">{t("dashboard.longterm.meta", lang=lang, sections=sections_n, total=total)}</span>
   </div>
   <div class="stats-row">
     <div class="stat-item">
       <div class="stat-number" style="color:{COLORS['green']}">{keep_n}</div>
-      <div class="stat-label">保留</div>
+      <div class="stat-label">{t("dashboard.longterm.keep", lang=lang)}</div>
     </div>
     <div class="stat-item">
       <div class="stat-number" style="color:{COLORS['orange']}">{review_n}</div>
-      <div class="stat-label">复查</div>
+      <div class="stat-label">{t("dashboard.longterm.review", lang=lang)}</div>
     </div>
     <div class="stat-item">
       <div class="stat-number" style="color:{COLORS['red']}">{delete_n}</div>
-      <div class="stat-label">删除</div>
+      <div class="stat-label">{t("dashboard.longterm.delete", lang=lang)}</div>
     </div>
   </div>
   {llm_badge}
@@ -399,11 +406,12 @@ def _render_longterm(longterm: Optional[tuple]) -> str:
 
 # ── Section 2：短期记忆 ────────────────────────────────────────────────────────
 
-def _render_health(health: Optional[dict]) -> str:
+def _render_health(health: Optional[dict], lang: str = "") -> str:
+    from i18n import t
     if health is None:
         return _placeholder_card(
-            "短期记忆概况",
-            "运行 <code>/memory-check</code> 获取短期记忆概况"
+            t("dashboard.placeholder.health.title", lang=lang),
+            t("dashboard.placeholder.health.hint",  lang=lang),
         )
 
     total   = health.get("shortterm_total", 0)
@@ -420,24 +428,24 @@ def _render_health(health: Optional[dict]) -> str:
 
     fts_warn = ""
     if fts:
-        fts_warn = f'<div class="warn-row">⚠️ 检测到 FTS 降级模式，建议配置 embedding provider</div>'
+        fts_warn = f'<div class="warn-row">{t("dashboard.health.fts_warn", lang=lang)}</div>'
 
     return f"""<div class="section-card">
   <div class="section-header">
-    <span class="section-title">短期记忆概况</span>
+    <span class="section-title">{t("dashboard.health.title", lang=lang)}</span>
   </div>
   <div class="stats-row three-col">
     <div class="stat-item">
       <div class="stat-number">{total:,}</div>
-      <div class="stat-label">总条目</div>
+      <div class="stat-label">{t("dashboard.health.total", lang=lang)}</div>
     </div>
     <div class="stat-item">
       <div class="stat-number" style="color:{COLORS['orange']}">{zombie:,}</div>
-      <div class="stat-label">僵尸 {zratio*100:.1f}%</div>
+      <div class="stat-label">{t("dashboard.health.zombie", lang=lang, pct=f"{zratio*100:.1f}")}</div>
     </div>
     <div class="stat-item">
       <div class="stat-number" style="color:{COLORS['orange']}">{fp:,}</div>
-      <div class="stat-label">假阳性 {fpratio*100:.1f}%</div>
+      <div class="stat-label">{t("dashboard.health.fp", lang=lang, pct=f"{fpratio*100:.1f}")}</div>
     </div>
   </div>
   <div class="diag-row">
@@ -458,11 +466,12 @@ def _render_health(health: Optional[dict]) -> str:
 
 # ── Section 3：晋升前预检 ──────────────────────────────────────────────────────
 
-def _render_promotion(promotion: Optional[dict]) -> str:
+def _render_promotion(promotion: Optional[dict], lang: str = "") -> str:
+    from i18n import t
     if promotion is None:
         return _placeholder_card(
-            "晋升前预检",
-            "运行 <code>/memory-promote</code> 获取晋升前预检报告"
+            t("dashboard.placeholder.promotion.title", lang=lang),
+            t("dashboard.placeholder.promotion.hint",  lang=lang),
         )
 
     total_unp  = promotion.get("total_unpromotted", 0)
@@ -477,16 +486,16 @@ def _render_promotion(promotion: Optional[dict]) -> str:
     flag_items = [c for c in candidates if c.get("verdict") == "flag"]
 
     def _cand_row(c: dict) -> str:
-        verdict = c.get("verdict", "pass")
-        reason  = c.get("skip_reason") or c.get("flag_reason") or ""
-        path    = c.get("path", "")
-        start   = c.get("start", 0)
-        end     = c.get("end", 0)
-        score   = c.get("composite", 0.0)
-        color   = _action_color("delete" if verdict == "skip" else "review")
-        bg      = _action_bg("delete" if verdict == "skip" else "review")
-        icon    = "✕" if verdict == "skip" else "⚠"
-        reason_zh = _skip_reason(reason) if reason else ""
+        verdict   = c.get("verdict", "pass")
+        reason    = c.get("skip_reason") or c.get("flag_reason") or ""
+        path      = c.get("path", "")
+        start     = c.get("start", 0)
+        end       = c.get("end", 0)
+        score     = c.get("composite", 0.0)
+        color     = _action_color("delete" if verdict == "skip" else "review")
+        bg        = _action_bg("delete" if verdict == "skip" else "review")
+        icon      = "✕" if verdict == "skip" else "⚠"
+        reason_zh = _skip_reason(reason, lang=lang) if reason else ""
         return f"""<div class="entry-card">
       <div class="entry-header">
         <div class="entry-left">
@@ -506,7 +515,7 @@ def _render_promotion(promotion: Optional[dict]) -> str:
         rows = "\n".join(_cand_row(c) for c in (skip_items + flag_items))
         skip_section = f"""<details class="group-details" {open_attr}>
     <summary class="group-summary">
-      <span style="color:{COLORS['red']}">需处理条目</span>
+      <span style="color:{COLORS['red']}">{t("dashboard.promotion.issues", lang=lang)}</span>
       <span class="group-count" style="color:{COLORS['red']}">{len(skip_items)+len(flag_items)}</span>
       <svg class="section-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="{COLORS['text_secondary']}" stroke-width="1.5" stroke-linecap="round"/>
@@ -520,32 +529,34 @@ def _render_promotion(promotion: Optional[dict]) -> str:
         lt_n  = llm_eval.get("long_term_count", 0)
         ot_n  = llm_eval.get("one_time_count", 0)
         unc_n = llm_eval.get("uncertain_count", 0)
-        llm_row = f"""<div class="llm-badge">
-    <span class="llm-tag">🤖 LLM</span>
-    <span style="color:{COLORS['green']}">长期价值 {lt_n}</span>
-    <span class="sep">·</span>
-    <span style="color:{COLORS['orange']}">一次性 {ot_n}</span>
-    <span class="sep">·</span>
-    <span style="color:{COLORS['gray']}">不确定 {unc_n}</span>
-  </div>"""
+        llm_row = (
+            f'<div class="llm-badge">'
+            f'<span class="llm-tag">🤖 LLM</span>'
+            f'<span style="color:{COLORS["green"]}">{t("dashboard.promotion.llm_longterm",  lang=lang, n=lt_n)}</span>'
+            f'<span class="sep">·</span>'
+            f'<span style="color:{COLORS["orange"]}">{t("dashboard.promotion.llm_onetime",  lang=lang, n=ot_n)}</span>'
+            f'<span class="sep">·</span>'
+            f'<span style="color:{COLORS["gray"]}">{t("dashboard.promotion.llm_uncertain", lang=lang, n=unc_n)}</span>'
+            f'</div>'
+        )
 
     return f"""<div class="section-card">
   <div class="section-header">
-    <span class="section-title">晋升前预检</span>
-    <span class="section-meta">共 {total_unp} 条候选 · 检查 Top {top_n}</span>
+    <span class="section-title">{t("dashboard.promotion.title", lang=lang)}</span>
+    <span class="section-meta">{t("dashboard.promotion.meta", lang=lang, total=total_unp, top_n=top_n)}</span>
   </div>
   <div class="stats-row">
     <div class="stat-item">
       <div class="stat-number" style="color:{COLORS['green']}">{pass_n}</div>
-      <div class="stat-label">通过</div>
+      <div class="stat-label">{t("dashboard.promotion.pass", lang=lang)}</div>
     </div>
     <div class="stat-item">
       <div class="stat-number" style="color:{COLORS['red']}">{skip_n}</div>
-      <div class="stat-label">建议跳过</div>
+      <div class="stat-label">{t("dashboard.promotion.skip", lang=lang)}</div>
     </div>
     <div class="stat-item">
       <div class="stat-number" style="color:{COLORS['orange']}">{flag_n}</div>
-      <div class="stat-label">需关注</div>
+      <div class="stat-label">{t("dashboard.promotion.flag", lang=lang)}</div>
     </div>
   </div>
   {llm_row}
@@ -557,11 +568,12 @@ def _render_promotion(promotion: Optional[dict]) -> str:
 
 # ── Section 4：SOUL.md ─────────────────────────────────────────────────────────
 
-def _render_soul(soul: Optional[dict]) -> str:
+def _render_soul(soul: Optional[dict], lang: str = "") -> str:
+    from i18n import t
     if soul is None:
         return _placeholder_card(
-            "SOUL.md 健康",
-            "运行 <code>/soul-check</code> 获取 SOUL.md 健康报告"
+            t("dashboard.placeholder.soul.title", lang=lang),
+            t("dashboard.placeholder.soul.hint",  lang=lang),
         )
 
     level     = soul.get("risk_level", "ok")
@@ -570,21 +582,21 @@ def _render_soul(soul: Optional[dict]) -> str:
     sections  = soul.get("sections", [])
     color     = _risk_color(level)
     bg        = _risk_bg(level)
-    label     = _risk_label(level)
+    label     = _risk_label(level, lang=lang)
 
     section_tags = " ".join(
         f'<span class="section-tag">{s}</span>' for s in sections
-    ) if sections else f'<span style="color:{COLORS["text_tertiary"]}">无标准 section</span>'
+    ) if sections else f'<span style="color:{COLORS["text_tertiary"]}">{t("dashboard.soul.no_sections", lang=lang)}</span>'
 
     return f"""<div class="section-card">
   <div class="section-header">
-    <span class="section-title">SOUL.md 健康</span>
+    <span class="section-title">{t("dashboard.soul.title", lang=lang)}</span>
   </div>
   <div class="soul-summary">
     <span class="risk-badge" style="color:{color};background:{bg}">{label}</span>
-    <span class="soul-meta">{char_cnt:,} 字符</span>
+    <span class="soul-meta">{t("dashboard.soul.chars", lang=lang, n=f"{char_cnt:,}")}</span>
     <span class="sep">·</span>
-    <span class="soul-meta">{dir_cnt} 条强指令词</span>
+    <span class="soul-meta">{t("dashboard.soul.directives", lang=lang, n=dir_cnt)}</span>
   </div>
   <div class="section-tags">
     {section_tags}
@@ -594,11 +606,12 @@ def _render_soul(soul: Optional[dict]) -> str:
 
 # ── Section 5：配置诊断 ────────────────────────────────────────────────────────
 
-def _render_config(config: Optional[dict]) -> str:
+def _render_config(config: Optional[dict], lang: str = "") -> str:
+    from i18n import t
     if config is None:
         return _placeholder_card(
-            "配置诊断",
-            "运行 <code>/memory-diagnose</code> 获取配置诊断报告"
+            t("dashboard.placeholder.config.title", lang=lang),
+            t("dashboard.placeholder.config.hint",  lang=lang),
         )
 
     all_good = config.get("all_good", True)
@@ -607,29 +620,29 @@ def _render_config(config: Optional[dict]) -> str:
     if all_good:
         return f"""<div class="section-card">
   <div class="section-header">
-    <span class="section-title">配置诊断</span>
+    <span class="section-title">{t("dashboard.config.title", lang=lang)}</span>
   </div>
   <div class="config-good">
     <span style="color:{COLORS['green']}">✅</span>
-    <span>配置健康，未发现问题</span>
+    <span>{t("dashboard.config.all_good", lang=lang)}</span>
   </div>
 </div>"""
 
     issue_rows = "\n".join(
         f"""<div class="issue-row">
       <span class="issue-badge" style="color:{COLORS['orange']};background:{COLORS['orange_bg']}">⚠</span>
-      <span class="issue-text">{_config_code(i.get('code',''))}</span>
+      <span class="issue-text">{_config_code(i.get('code',''), lang=lang)}</span>
     </div>"""
         for i in issues
     )
 
     return f"""<div class="section-card">
   <div class="section-header">
-    <span class="section-title">配置诊断</span>
+    <span class="section-title">{t("dashboard.config.title", lang=lang)}</span>
   </div>
   <details class="group-details" open>
     <summary class="group-summary">
-      <span style="color:{COLORS['orange']}">发现 {len(issues)} 个配置问题</span>
+      <span style="color:{COLORS['orange']}">{t("dashboard.config.issues_found", lang=lang, n=len(issues))}</span>
       <svg class="section-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="{COLORS['text_secondary']}" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
@@ -909,6 +922,7 @@ details[open] .section-chevron {{ transform: rotate(180deg); }}
 def generate_dashboard_html(
     data: dict,
     workspace: str = "",
+    lang: str = "",
 ) -> str:
     """
     生成完整的 Dashboard HTML 字符串。
@@ -916,10 +930,15 @@ def generate_dashboard_html(
     Args:
         data      : load_dashboard_data() 的返回值
         workspace : workspace 路径（用于 header 显示）
+        lang      : 语言代码 "en"/"zh"，不传则跟随 detect_language()
 
     Returns:
         完整 HTML 字符串
     """
+    from i18n import t
+    from config import detect_language
+    resolved_lang = lang if lang in ("en", "zh") else detect_language()
+
     longterm  = data.get("longterm_audit")
     health    = data.get("health")
     promotion = data.get("promotion")
@@ -938,11 +957,11 @@ def generate_dashboard_html(
     for snap in [health, promotion, soul, config]:
         if snap and snap.get("checked_at"):
             timestamps.append(snap["checked_at"])
-    latest_ts = max(timestamps) if timestamps else 0
-    updated_ago = _format_ago(latest_ts) if latest_ts > 0 else "从未运行"
+    latest_ts   = max(timestamps) if timestamps else 0
+    updated_ago = _format_ago(latest_ts, lang=resolved_lang) if latest_ts > 0 else t("dashboard.html.never_run", lang=resolved_lang)
 
     # workspace 显示名
-    ws_display = Path(workspace).name if workspace else "未知 workspace"
+    ws_display = Path(workspace).name if workspace else t("dashboard.html.unknown_ws", lang=resolved_lang)
     scan_time  = (
         time.strftime("%Y-%m-%d %H:%M", time.localtime(latest_ts))
         if latest_ts > 0 else "—"
@@ -950,38 +969,43 @@ def generate_dashboard_html(
 
     # Hero 状态文字
     if health_score is None:
-        hero_headline = "暂无数据"
-        hero_sub = "请运行任意检查工具以获取健康评分"
+        hero_headline = t("dashboard.hero.no_data",     lang=resolved_lang)
+        hero_sub      = t("dashboard.hero.no_data_sub", lang=resolved_lang)
     elif health_score >= 80:
-        hero_headline = "记忆系统状态良好"
-        hero_sub = "各项指标健康，无需立即处理。"
+        hero_headline = t("dashboard.hero.healthy",     lang=resolved_lang)
+        hero_sub      = t("dashboard.hero.healthy_sub", lang=resolved_lang)
     elif health_score >= 60:
-        hero_headline = "记忆系统需要关注"
-        hero_sub = "发现部分问题，建议尽快处理。"
+        hero_headline = t("dashboard.hero.warning",     lang=resolved_lang)
+        hero_sub      = t("dashboard.hero.warning_sub", lang=resolved_lang)
     else:
-        hero_headline = "记忆系统需要处理"
-        hero_sub = "存在较多问题，建议立即运行清理工具。"
+        hero_headline = t("dashboard.hero.critical",     lang=resolved_lang)
+        hero_sub      = t("dashboard.hero.critical_sub", lang=resolved_lang)
 
     # Hero 数据覆盖说明
     covered = []
-    if longterm:  covered.append(("green",  "长期记忆"))
-    if health:    covered.append(("green",  "短期记忆"))
-    if soul:      covered.append(("green",  "SOUL.md"))
-    if not longterm: covered.append(("gray", "长期记忆"))
-    if not health:   covered.append(("gray", "短期记忆"))
-    if not soul:     covered.append(("gray", "SOUL.md"))
+    if longterm:     covered.append(("green", t("dashboard.coverage.longterm",  lang=resolved_lang)))
+    if health:       covered.append(("green", t("dashboard.coverage.shortterm", lang=resolved_lang)))
+    if soul:         covered.append(("green", t("dashboard.coverage.soul",      lang=resolved_lang)))
+    if not longterm: covered.append(("gray",  t("dashboard.coverage.longterm",  lang=resolved_lang)))
+    if not health:   covered.append(("gray",  t("dashboard.coverage.shortterm", lang=resolved_lang)))
+    if not soul:     covered.append(("gray",  t("dashboard.coverage.soul",      lang=resolved_lang)))
 
     coverage_html = " ".join(
         f'<span class="coverage-dot" style="background:{COLORS[c]}"></span>{label}'
         for c, label in covered
     )
 
+    # html lang 属性
+    html_lang = "zh-CN" if resolved_lang == "zh" else "en"
+    page_title = t("dashboard.html.title", lang=resolved_lang)
+    updated_badge = t("dashboard.html.updated_ago", lang=resolved_lang, ago=updated_ago)
+
     return f"""<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="{html_lang}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenClaw Memory Health</title>
+<title>{page_title}</title>
 <style>
 {_build_css()}
 </style>
@@ -993,7 +1017,7 @@ def generate_dashboard_html(
   <div class="header">
     <div class="header-top">
       <span class="header-title">OpenClaw Memory Health</span>
-      <span class="header-badge">最近更新：{updated_ago}</span>
+      <span class="header-badge">{updated_badge}</span>
     </div>
     <div class="header-sub">{ws_display} &nbsp;·&nbsp; {scan_time}</div>
   </div>
@@ -1008,36 +1032,37 @@ def generate_dashboard_html(
     </div>
   </div>
 
-  <!-- Section 1: 长期记忆 -->
-  {_render_longterm(longterm)}
+  <!-- Section 1 -->
+  {_render_longterm(longterm, lang=resolved_lang)}
 
-  <!-- Section 2: 短期记忆 -->
-  {_render_health(health)}
+  <!-- Section 2 -->
+  {_render_health(health, lang=resolved_lang)}
 
-  <!-- Section 3: 晋升前预检 -->
-  {_render_promotion(promotion)}
+  <!-- Section 3 -->
+  {_render_promotion(promotion, lang=resolved_lang)}
 
-  <!-- Section 4: SOUL.md -->
-  {_render_soul(soul)}
+  <!-- Section 4 -->
+  {_render_soul(soul, lang=resolved_lang)}
 
-  <!-- Section 5: 配置诊断 -->
-  {_render_config(config)}
+  <!-- Section 5 -->
+  {_render_config(config, lang=resolved_lang)}
 
   <!-- Footer -->
   <div class="footer">
-    由 <a href="https://github.com/ladyiceberg/openclaw-memory-quality">openclaw-memhealth</a> 生成
+    {t("dashboard.footer.generated_by", lang=resolved_lang)}
+    <a href="https://github.com/ladyiceberg/openclaw-memory-quality">openclaw-memhealth</a>
     &nbsp;·&nbsp;
-    <a href="https://github.com/ladyiceberg/openclaw-memory-quality/issues/new">报告问题</a>
+    <a href="https://github.com/ladyiceberg/openclaw-memory-quality/issues/new">{t("dashboard.footer.report_issue", lang=resolved_lang)}</a>
   </div>
 
 </div>
 <script>
-// 展开/折叠条目详情
+// toggle entry detail
 document.querySelectorAll('.entry-card').forEach(card => {{
   card.addEventListener('click', () => card.classList.toggle('expanded'));
 }});
 
-// 圆环加载动画
+// ring animation
 document.addEventListener('DOMContentLoaded', () => {{
   const circle = document.querySelector('circle[stroke-dasharray]');
   if (circle) {{

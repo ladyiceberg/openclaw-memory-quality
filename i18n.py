@@ -751,6 +751,38 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "未知工具：{name}",
     },
 
+    # ── dashboard ──────────────────────────────────────────────────────────────
+    "dashboard.header": {
+        "en": "📊 Memory Health Dashboard",
+        "zh": "📊 记忆健康看板",
+    },
+    "dashboard.opened": {
+        "en": "✅ Dashboard opened in your browser.\n   File: {path}",
+        "zh": "✅ 看板已在浏览器中打开。\n   文件：{path}",
+    },
+    "dashboard.tip": {
+        "en": "Tip: Run more tools (/memory-check, /soul-check, etc.) to populate all sections.",
+        "zh": "提示：运行更多工具（/memory-check、/soul-check 等）以填充全部板块。",
+    },
+    "dashboard.error": {
+        "en": "❌ Failed to generate dashboard: {msg}",
+        "zh": "❌ 生成看板失败：{msg}",
+    },
+    "tool.dashboard.desc": {
+        "en": (
+            "Generate and open the OpenClaw Memory Health Dashboard in the browser. "
+            "Aggregates results from all previously run tools (health check, longterm audit, "
+            "promotion audit, soul check, config doctor) into a single visual report. "
+            "Use after running any memory tool to see a visual summary."
+        ),
+        "zh": (
+            "生成并在浏览器中打开 OpenClaw 记忆健康看板。"
+            "聚合所有已运行工具的结果（health check、longterm audit、"
+            "promotion audit、soul check、config doctor）为一份可视化报告。"
+            "运行任意记忆工具后使用。"
+        ),
+    },
+
     # ── promotion audit ────────────────────────────────────────────────────────
     "promo.header": {
         "en": "🛡️ Pre-Promotion Audit",

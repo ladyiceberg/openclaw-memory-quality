@@ -34,6 +34,7 @@ from src.tools.shortterm_cleanup import run_shortterm_cleanup
 from src.tools.config_doctor import run_config_doctor
 from src.tools.soul_check import run_soul_check
 from src.tools.promotion_audit import run_promotion_audit_tool
+from src.tools.dashboard import run_dashboard
 
 # ── Server 实例 ────────────────────────────────────────────────────────────────
 
@@ -190,6 +191,19 @@ async def list_tools() -> list[Tool]:
                 },
             },
         ),
+        Tool(
+            name="memory_dashboard_oc",
+            description=t("tool.dashboard.desc"),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "workspace_dir": {
+                        "type": "string",
+                        "description": "OpenClaw workspace 路径（可选）",
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -235,6 +249,9 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         top_n   = int(arguments.get("top_n", 10))
         use_llm = bool(arguments.get("use_llm", False))
         return await _promotion_audit(probe, top_n, use_llm)
+
+    if name == "memory_dashboard_oc":
+        return await _dashboard(probe)
 
     return [TextContent(type="text", text=t("common.unknown_tool", name=name))]
 
@@ -287,6 +304,12 @@ async def _soul_check(probe, use_llm: bool) -> list[TextContent]:
 async def _promotion_audit(probe, top_n: int, use_llm: bool) -> list[TextContent]:
     """memory_promotion_audit_oc 实现。"""
     text = run_promotion_audit_tool(probe, top_n=top_n, use_llm=use_llm)
+    return [TextContent(type="text", text=text)]
+
+
+async def _dashboard(probe) -> list[TextContent]:
+    """memory_dashboard_oc 实现。"""
+    text = run_dashboard(probe)
     return [TextContent(type="text", text=text)]
 
 

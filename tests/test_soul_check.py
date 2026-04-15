@@ -7,6 +7,7 @@ test_soul_check.py · memory_soul_check_oc 工具集成测试
 import tempfile
 from pathlib import Path
 from typing import Optional
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -248,7 +249,7 @@ class TestC3StabilityViaToolRuns:
 
 class TestUseLlmPlaceholder:
     def test_use_llm_true_does_not_crash(self):
-        """use_llm=True 在 Phase 2 不崩溃，C4 显示占位提示。"""
+        """use_llm=True 在无 API key 时不崩溃，C4 显示 LLM 不可用提示。"""
         ws = TempWorkspace()
         try:
             result = run_soul_check(ws.make_probe(), use_llm=True, db_path=ws.db)
@@ -263,6 +264,144 @@ class TestUseLlmPlaceholder:
         try:
             result = run_soul_check(ws.make_probe(), db_path=ws.db)
             assert "C4" in result
+        finally:
+            ws.cleanup()
+
+    def test_use_llm_false_shows_c4_disabled(self):
+        """use_llm=False 时 C4 显示占位提示。"""
+        ws = TempWorkspace()
+        try:
+            result = run_soul_check(ws.make_probe(), use_llm=False, db_path=ws.db)
+            assert "use_llm=True" in result or "未启用" in result
+        finally:
+            ws.cleanup()
+
+
+# ── use_llm=True LLM 集成（mock LLM）────────────────────────────────────────
+
+class TestUseLlmIntegration:
+    """用 mock LLM 验证 use_llm=True 的完整流程，不需要真实 API key。"""
+
+    def _make_mock_llm(self, c4a_conflicts=None, c4b_mismatches=None):
+        """构造按调用顺序返回结果的 mock LLM：C2（可能0次）→ C4-a → C4-b。"""
+        from unittest.mock import MagicMock
+        call_count = [0]
+        _conflicts = c4a_conflicts or []
+        _mismatches = c4b_mismatches or []
+
+        def complete(system, user, json_schema=None, max_tokens=256):
+            resp = MagicMock()
+            call_count[0] += 1
+            # 简单策略：C2 判断返回 persona_content；C4-a 返回 conflicts；C4-b 返回 mismatches
+            # 用 system prompt 内容区分（C4-a prompt 里有"矛盾"）
+            if "矛盾" in system or "conflict" in system.lower():
+                resp.parsed = {"conflicts": _conflicts}
+            elif "不一致" in system or "mismatch" in system.lower():
+                resp.parsed = {"mismatches": _mismatches}
+            else:
+                # C2 精判
+                resp.parsed = {"classification": "persona_content", "reason": "正常身份描述"}
+            return resp
+
+        mock = MagicMock()
+        mock.complete.side_effect = complete
+        return mock
+
+    def test_use_llm_true_with_mock_no_issues(self):
+        """mock LLM 返回无问题 → C4 输出'未发现问题'。"""
+        ws = TempWorkspace()
+        try:
+            from src.analyzers.llm_soul_evaluator import LLMSoulEvalResult
+            with patch("src.tools.soul_check._run_llm_soul_eval",
+                       return_value=LLMSoulEvalResult()):
+                result = run_soul_check(ws.make_probe(), use_llm=True, db_path=ws.db)
+            assert "C4" in result
+            assert "Traceback" not in result
+            assert "✅" in result or "No semantic" in result or "未发现" in result
+        finally:
+            ws.cleanup()
+
+    def test_use_llm_true_with_conflicts(self):
+        """mock LLM 返回冲突 → C4 输出冲突信息。"""
+        from src.analyzers.llm_soul_evaluator import LLMSoulEvalResult, C4Conflict
+        ws = TempWorkspace()
+        try:
+            conflict_result = LLMSoulEvalResult(
+                c4_conflicts=[C4Conflict("谨慎行事", "快速执行", "high", "核心矛盾")]
+            )
+            with patch("src.tools.soul_check._run_llm_soul_eval",
+                       return_value=conflict_result):
+                result = run_soul_check(ws.make_probe(), use_llm=True, db_path=ws.db)
+            assert "C4" in result
+            assert "谨慎行事" in result or "快速执行" in result or "high" in result
+            assert "Traceback" not in result
+        finally:
+            ws.cleanup()
+
+    def test_use_llm_true_with_task_instructions_in_c2(self):
+        """mock LLM 发现 C2 task_instruction → 输出任务指令告警。"""
+        from src.analyzers.llm_soul_evaluator import LLMSoulEvalResult, C2ParagraphClassification
+        ws = TempWorkspace()
+        try:
+            c2_result = LLMSoulEvalResult(
+                c2_classifications=[
+                    C2ParagraphClassification("When email arrives...", "task_instruction", "任务指令")
+                ]
+            )
+            with patch("src.tools.soul_check._run_llm_soul_eval",
+                       return_value=c2_result):
+                result = run_soul_check(ws.make_probe(), use_llm=True, db_path=ws.db)
+            assert "task_instruction" in result or "任务指令" in result
+            assert "Traceback" not in result
+        finally:
+            ws.cleanup()
+
+    def test_use_llm_true_with_llm_error_shows_warning(self):
+        """LLM 出错（llm_error 非空）→ 输出 LLM 不可用提示，不崩溃。"""
+        from src.analyzers.llm_soul_evaluator import LLMSoulEvalResult
+        ws = TempWorkspace()
+        try:
+            error_result = LLMSoulEvalResult()
+            error_result.llm_error = "API key not configured"
+            with patch("src.tools.soul_check._run_llm_soul_eval",
+                       return_value=error_result):
+                result = run_soul_check(ws.make_probe(), use_llm=True, db_path=ws.db)
+            assert "Traceback" not in result
+            # 应有错误提示
+            assert "API key" in result or "不可用" in result or "unavailable" in result.lower()
+        finally:
+            ws.cleanup()
+
+    def test_use_llm_true_with_identity_file(self):
+        """有 IDENTITY.md 文件时 use_llm=True 不崩溃。"""
+        from src.analyzers.llm_soul_evaluator import LLMSoulEvalResult
+        ws = TempWorkspace()
+        try:
+            # 写入 IDENTITY.md
+            identity_path = ws.path / "IDENTITY.md"
+            identity_path.write_text("# IDENTITY\nName: TestBot\nVibe: helpful\n")
+
+            # 让 probe 有 identity_path
+            probe = ws.make_probe()
+            object.__setattr__(probe, "identity_path", identity_path)
+
+            empty_result = LLMSoulEvalResult()
+            with patch("src.tools.soul_check._run_llm_soul_eval",
+                       return_value=empty_result):
+                result = run_soul_check(probe, use_llm=True, db_path=ws.db)
+            assert "Traceback" not in result
+            assert isinstance(result, str)
+        finally:
+            ws.cleanup()
+
+    def test_use_llm_true_without_api_key_shows_warning(self):
+        """API key 未配置 → use_llm=True 输出友好提示，不崩溃。"""
+        ws = TempWorkspace()
+        try:
+            with patch("llm_client.create_client", side_effect=ValueError("No API key")):
+                result = run_soul_check(ws.make_probe(), use_llm=True, db_path=ws.db)
+            assert "Traceback" not in result
+            assert isinstance(result, str)
         finally:
             ws.cleanup()
 

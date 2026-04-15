@@ -582,6 +582,42 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "(Disabled — pass use_llm=True to enable semantic conflict detection)",
         "zh": "（未启用，传入 use_llm=True 开启语义冲突检测）",
     },
+    "soul.c4_c2_precision_header": {
+        "en": "C2 Precision Judgment ({n} suspicious paragraphs):",
+        "zh": "C2 精判（{n} 处可疑段落）：",
+    },
+    "soul.c4_c2_item": {
+        "en": "  [{classification}] {hint}  — {reason}",
+        "zh": "  [{classification}] {hint}  — {reason}",
+    },
+    "soul.c4_c2_task_warning": {
+        "en": "⚠️  {n} paragraph(s) contain task instructions — SOUL.md should only define persona",
+        "zh": "⚠️  {n} 处段落含任务指令，SOUL.md 应只定义人格",
+    },
+    "soul.c4_no_issues": {
+        "en": "✅ No semantic conflicts or identity mismatches found.",
+        "zh": "✅ 未发现语义冲突或身份不一致。",
+    },
+    "soul.c4_conflicts_header": {
+        "en": "Internal conflicts found ({n}):",
+        "zh": "发现内部冲突（{n} 处）：",
+    },
+    "soul.c4_conflict_item": {
+        "en": "  [{severity}] \"{a}\" ↔ \"{b}\"  — {reason}",
+        "zh": "  [{severity}] \"{a}\" ↔ \"{b}\"  — {reason}",
+    },
+    "soul.c4_mismatches_header": {
+        "en": "SOUL.md vs IDENTITY.md mismatches ({n}):",
+        "zh": "SOUL.md 与 IDENTITY.md 不一致（{n} 处）：",
+    },
+    "soul.c4_mismatch_item": {
+        "en": "  [{severity}] SOUL: \"{soul}\" / IDENTITY: \"{ident}\"  — {reason}",
+        "zh": "  [{severity}] SOUL：\"{soul}\" / IDENTITY：\"{ident}\"  — {reason}",
+    },
+    "soul.c4_llm_error": {
+        "en": "⚠️  LLM evaluation unavailable: {msg}",
+        "zh": "⚠️  LLM 评估不可用：{msg}",
+    },
     "soul.section_ok": {
         "en": "✅ No issues found.",
         "zh": "✅ 未发现问题。",

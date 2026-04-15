@@ -11,8 +11,8 @@ soul_check.py · memory_soul_check_oc 工具的核心逻辑
   3. 从 session cache 读取上次快照（C3 对比用）
   4. 运行 soul_auditor（C1 + C2 规则层 + C3）
   5. 将当前快照写入 session cache
-  6. 格式化输出
-  7. use_llm=True：Phase 3 占位提示
+  6. use_llm=True：运行 LLM 语义评估（C2 精判 + C4-a + C4-b）
+  7. 格式化输出
 
 设计原则：
   - 永远不写 SOUL.md，只读取和分析
@@ -39,7 +39,7 @@ def run_soul_check(
 
     Args:
         probe   : probe_workspace() 的返回值
-        use_llm : Phase 3 功能，目前输出占位提示
+        use_llm : 是否启用 LLM 语义评估（C2 精判 + C4 冲突检测）
         db_path : 测试用，覆盖默认 SQLite 路径
 
     Returns:
@@ -135,9 +135,17 @@ def run_soul_check(
         lines.append(t("soul.section_ok"))
     lines.append("")
 
-    # C4 占位
+    # C4 冲突检测（use_llm=True 时运行 LLM；否则显示占位提示）
     lines.append(t("soul.c4_header"))
-    lines.append(t("soul.c4_disabled"))
+    if use_llm:
+        llm_result = _run_llm_soul_eval(
+            soul_content=content,
+            suspicious_paragraphs=result.c2_suspicious_paragraphs,
+            probe=probe,
+        )
+        _format_c4_results(lines, llm_result)
+    else:
+        lines.append(t("soul.c4_disabled"))
     lines.append("")
 
     # ── 总结 ───────────────────────────────────────────────────────────────
@@ -159,6 +167,115 @@ def run_soul_check(
         lines.pop()
 
     return "\n".join(lines)
+
+
+# ── LLM 评估辅助 ─────────────────────────────────────────────────────────────
+
+def _run_llm_soul_eval(
+    soul_content: str,
+    suspicious_paragraphs: list,
+    probe: ProbeResult,
+):
+    """
+    尝试运行 LLM 评估。返回 LLMSoulEvalResult 或 None（API key 未配置时）。
+    失败时优雅降级（返回带 llm_error 的结果），不抛异常。
+    """
+    from src.analyzers.llm_soul_evaluator import (
+        LLMSoulEvalResult,
+        run_llm_soul_evaluation,
+    )
+    # 读取 IDENTITY.md 内容（可选）
+    identity_content = ""
+    if probe.identity_path is not None:
+        try:
+            identity_content = probe.identity_path.read_text(encoding="utf-8")
+        except Exception:
+            pass
+
+    try:
+        from llm_client import create_client
+        llm = create_client()
+    except ValueError:
+        result = LLMSoulEvalResult()
+        result.llm_error = "API key not configured"
+        return result
+    except Exception as e:
+        result = LLMSoulEvalResult()
+        result.llm_error = str(e)
+        return result
+
+    try:
+        return run_llm_soul_evaluation(
+            soul_content=soul_content,
+            suspicious_paragraphs=suspicious_paragraphs,
+            identity_content=identity_content,
+            llm_client=llm,
+        )
+    except Exception as e:
+        result = LLMSoulEvalResult()
+        result.llm_error = str(e)
+        return result
+
+
+def _format_c4_results(lines: list, llm_result) -> None:
+    """格式化 LLM soul 评估结果，追加到 lines。"""
+    from src.analyzers.llm_soul_evaluator import LLMSoulEvalResult
+
+    if llm_result is None:
+        lines.append(t("soul.c4_disabled"))
+        return
+
+    if llm_result.llm_error:
+        lines.append(t("soul.c4_llm_error", msg=llm_result.llm_error))
+        return
+
+    has_issues = False
+
+    # C2 精判结果
+    if llm_result.c2_classifications:
+        lines.append(t("soul.c4_c2_precision_header", n=len(llm_result.c2_classifications)))
+        task_count = 0
+        for c in llm_result.c2_classifications:
+            lines.append(t(
+                "soul.c4_c2_item",
+                classification=c.classification,
+                hint=c.paragraph_hint,
+                reason=c.reason,
+            ))
+            if c.classification in ("task_instruction", "mixed"):
+                task_count += 1
+        if task_count > 0:
+            lines.append(t("soul.c4_c2_task_warning", n=task_count))
+            has_issues = True
+
+    # C4-a 内部冲突
+    if llm_result.c4_conflicts:
+        has_issues = True
+        lines.append(t("soul.c4_conflicts_header", n=len(llm_result.c4_conflicts)))
+        for c in llm_result.c4_conflicts:
+            lines.append(t(
+                "soul.c4_conflict_item",
+                severity=c.severity,
+                a=c.statement_a,
+                b=c.statement_b,
+                reason=c.reason,
+            ))
+
+    # C4-b IDENTITY 不一致
+    if llm_result.c4_mismatches:
+        has_issues = True
+        lines.append(t("soul.c4_mismatches_header", n=len(llm_result.c4_mismatches)))
+        for m in llm_result.c4_mismatches:
+            lines.append(t(
+                "soul.c4_mismatch_item",
+                severity=m.severity,
+                soul=m.soul_description,
+                ident=m.identity_description,
+                reason=m.reason,
+            ))
+
+    if not has_issues:
+        lines.append(t("soul.c4_no_issues"))
 
 
 # ── 辅助函数 ───────────────────────────────────────────────────────────────────

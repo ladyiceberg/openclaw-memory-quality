@@ -38,11 +38,8 @@ OpenClaw 会随着你的使用自动积累记忆——短期 recall 信号、晋
 
 ## 安装
 
-> 🚧 **开发中。** 项目正在积极推进，第一个正式版本发布前欢迎 Star/Watch 关注。
-
 ```bash
-# 即将支持
-pip install openclaw-memhealth
+pip install openclaw-memory-quality
 ```
 
 ---
@@ -176,11 +173,8 @@ Layer 3: Remediate — safely clean up polluted long-term memory
 
 ## Installation
 
-> 🚧 **Work in progress.** The project is under active development. Star/watch the repo to get notified when the first release is ready.
-
 ```bash
-# Coming soon
-pip install openclaw-memhealth
+pip install openclaw-memory-quality
 ```
 
 ---

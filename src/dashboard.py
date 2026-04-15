@@ -61,18 +61,19 @@ COLORS = {
 
 # ── 辅助函数 ───────────────────────────────────────────────────────────────────
 
-def _format_ago(ts: float) -> str:
-    """将时间戳格式化为'N 小时前'等形式。"""
+def _format_ago(ts: float, lang: str = "") -> str:
+    """将时间戳格式化为'N 小时前'等形式。lang 不传则跟随系统 locale。"""
+    from i18n import t
     if ts <= 0:
-        return "未知"
+        return t("dashboard.time.unknown", lang=lang)
     secs = time.time() - ts
     if secs < 60:
-        return "刚刚"
+        return t("dashboard.time.just_now", lang=lang)
     if secs < 3600:
-        return f"{int(secs/60)} 分钟前"
+        return t("dashboard.time.minutes_ago", lang=lang, n=int(secs / 60))
     if secs < 86400:
-        return f"{int(secs/3600)} 小时前"
-    return f"{int(secs/86400)} 天前"
+        return t("dashboard.time.hours_ago", lang=lang, n=int(secs / 3600))
+    return t("dashboard.time.days_ago", lang=lang, n=int(secs / 86400))
 
 
 def _health_color(score: Optional[int]) -> str:
@@ -100,8 +101,12 @@ def _action_icon(action: str) -> str:
     return {"keep": "✓", "review": "!", "delete": "×"}.get(action, "?")
 
 
-def _action_label_zh(action: str) -> str:
-    return {"keep": "保留", "review": "复查", "delete": "删除"}.get(action, action)
+def _action_label(action: str, lang: str = "") -> str:
+    from i18n import t
+    key = f"dashboard.action.{action}"
+    result = t(key, lang=lang)
+    # 未知 action 时 t() 返回 "[missing: ...]"，降级返回原始值
+    return result if not result.startswith("[missing:") else action
 
 
 def _risk_color(level: str) -> str:
@@ -114,9 +119,11 @@ def _risk_bg(level: str) -> str:
             "medium": COLORS["orange_bg"], "high": COLORS["red_bg"]}.get(level, COLORS["gray_bg"])
 
 
-def _risk_label_zh(level: str) -> str:
-    return {"ok": "健康", "low": "低风险", "medium": "中等风险",
-            "high": "高风险"}.get(level, level)
+def _risk_label(level: str, lang: str = "") -> str:
+    from i18n import t
+    key = f"dashboard.risk.{level}"
+    result = t(key, lang=lang)
+    return result if not result.startswith("[missing:") else level
 
 
 def _score_bar(value: int, max_val: int = 100, color: str = "") -> str:
@@ -130,34 +137,32 @@ def _score_bar(value: int, max_val: int = 100, color: str = "") -> str:
     )
 
 
-def _v1_status_zh(status: str) -> str:
-    return {"exists": "来源存在", "deleted": "来源已删除",
-            "possibly_moved": "可能已移动"}.get(status, status)
+def _v1_status(status: str, lang: str = "") -> str:
+    from i18n import t
+    key = f"dashboard.v1.{status}"
+    result = t(key, lang=lang)
+    return result if not result.startswith("[missing:") else status
 
 
-def _v3_status_zh(status: str) -> str:
-    return {"ok": "无重复", "duplicate_winner": "重复保留",
-            "duplicate_loser": "重复删除"}.get(status, status)
+def _v3_status(status: str, lang: str = "") -> str:
+    from i18n import t
+    key = f"dashboard.v3.{status}"
+    result = t(key, lang=lang)
+    return result if not result.startswith("[missing:") else status
 
 
-def _skip_reason_zh(reason: str) -> str:
-    return {
-        "source_deleted":   "来源文件已删除",
-        "import_only":      "仅含 import 语句",
-        "comments_only":    "仅含注释行",
-        "boilerplate":      "空内容或样板代码",
-        "debug_code":       "含调试输出代码",
-        "already_promoted": "已存在于 MEMORY.md",
-    }.get(reason, reason)
+def _skip_reason(reason: str, lang: str = "") -> str:
+    from i18n import t
+    key = f"dashboard.skip.{reason}"
+    result = t(key, lang=lang)
+    return result if not result.startswith("[missing:") else reason
 
 
-def _config_code_zh(code: str) -> str:
-    return {
-        "fts":       "FTS 降级模式（未使用语义 embedding）",
-        "minscore":  "minScore 过低（噪音条目过多）",
-        "mmr":       "MMR 未开启（重复条目多）",
-        "embedding": "Embedding 质量不足",
-    }.get(code, code)
+def _config_code(code: str, lang: str = "") -> str:
+    from i18n import t
+    key = f"dashboard.config.{code}"
+    result = t(key, lang=lang)
+    return result if not result.startswith("[missing:") else code
 
 
 # ── 综合健康分计算 ─────────────────────────────────────────────────────────────
@@ -314,13 +319,13 @@ def _render_longterm(longterm: Optional[tuple]) -> str:
         source  = item.get("source_path", "")
         start   = item.get("source_start", 0)
         end     = item.get("source_end", 0)
-        v1      = _v1_status_zh(item.get("v1_status", ""))
-        v3      = _v3_status_zh(item.get("v3_status", ""))
+        v1      = _v1_status(item.get("v1_status", ""))
+        v3      = _v3_status(item.get("v3_status", ""))
         score   = item.get("score", 0.0)
         color   = _action_color(action)
         bg      = _action_bg(action)
         icon    = _action_icon(action)
-        label   = _action_label_zh(action)
+        label   = _action_label(action)
         return f"""<div class="entry-card">
       <div class="entry-header">
         <div class="entry-left">
@@ -481,7 +486,7 @@ def _render_promotion(promotion: Optional[dict]) -> str:
         color   = _action_color("delete" if verdict == "skip" else "review")
         bg      = _action_bg("delete" if verdict == "skip" else "review")
         icon    = "✕" if verdict == "skip" else "⚠"
-        reason_zh = _skip_reason_zh(reason) if reason else ""
+        reason_zh = _skip_reason(reason) if reason else ""
         return f"""<div class="entry-card">
       <div class="entry-header">
         <div class="entry-left">
@@ -565,7 +570,7 @@ def _render_soul(soul: Optional[dict]) -> str:
     sections  = soul.get("sections", [])
     color     = _risk_color(level)
     bg        = _risk_bg(level)
-    label     = _risk_label_zh(level)
+    label     = _risk_label(level)
 
     section_tags = " ".join(
         f'<span class="section-tag">{s}</span>' for s in sections
@@ -613,7 +618,7 @@ def _render_config(config: Optional[dict]) -> str:
     issue_rows = "\n".join(
         f"""<div class="issue-row">
       <span class="issue-badge" style="color:{COLORS['orange']};background:{COLORS['orange_bg']}">⚠</span>
-      <span class="issue-text">{_config_code_zh(i.get('code',''))}</span>
+      <span class="issue-text">{_config_code(i.get('code',''))}</span>
     </div>"""
         for i in issues
     )

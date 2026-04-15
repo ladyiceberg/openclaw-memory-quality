@@ -33,6 +33,7 @@ from src.tools.longterm_cleanup import run_longterm_cleanup
 from src.tools.shortterm_cleanup import run_shortterm_cleanup
 from src.tools.config_doctor import run_config_doctor
 from src.tools.soul_check import run_soul_check
+from src.tools.promotion_audit import run_promotion_audit_tool
 
 # ── Server 实例 ────────────────────────────────────────────────────────────────
 
@@ -166,6 +167,29 @@ async def list_tools() -> list[Tool]:
                 },
             },
         ),
+        Tool(
+            name="memory_promotion_audit_oc",
+            description=t("tool.promotion_audit.desc"),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "workspace_dir": {
+                        "type": "string",
+                        "description": "OpenClaw workspace 路径（可选）",
+                    },
+                    "top_n": {
+                        "type": "integer",
+                        "description": "检查评分最高的前 N 条候选（默认 10）",
+                        "default": 10,
+                    },
+                    "use_llm": {
+                        "type": "boolean",
+                        "description": "是否启用关卡 5 LLM 长期价值 advisory（默认 false）",
+                        "default": False,
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -206,6 +230,11 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     if name == "memory_soul_check_oc":
         use_llm = bool(arguments.get("use_llm", False))
         return await _soul_check(probe, use_llm)
+
+    if name == "memory_promotion_audit_oc":
+        top_n   = int(arguments.get("top_n", 10))
+        use_llm = bool(arguments.get("use_llm", False))
+        return await _promotion_audit(probe, top_n, use_llm)
 
     return [TextContent(type="text", text=t("common.unknown_tool", name=name))]
 
@@ -252,6 +281,12 @@ async def _config_doctor(probe) -> list[TextContent]:
 async def _soul_check(probe, use_llm: bool) -> list[TextContent]:
     """memory_soul_check_oc 实现。"""
     text = run_soul_check(probe, use_llm=use_llm)
+    return [TextContent(type="text", text=text)]
+
+
+async def _promotion_audit(probe, top_n: int, use_llm: bool) -> list[TextContent]:
+    """memory_promotion_audit_oc 实现。"""
+    text = run_promotion_audit_tool(probe, top_n=top_n, use_llm=use_llm)
     return [TextContent(type="text", text=text)]
 
 

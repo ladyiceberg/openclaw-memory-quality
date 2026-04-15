@@ -536,6 +536,22 @@ STRINGS: dict[str, dict[str, str]] = {
             "纯只读，永不自动修改 SOUL.md。"
         ),
     },
+    "tool.promotion_audit.desc": {
+        "en": (
+            "Pre-promotion quality audit: checks the top-N short-term memory candidates "
+            "before Dreaming promotes them. Detects deleted source files, low-value snippets "
+            "(imports/comments/debug code), already-promoted duplicates, and false-positive signals. "
+            "Optional LLM advisory (use_llm=True) evaluates long-term knowledge value. "
+            "Read-only, never modifies memory files."
+        ),
+        "zh": (
+            "晋升前质量预检：在 Dreaming 晋升前对评分最高的 N 条候选执行四道关卡审查——"
+            "来源文件存在性、低价值内容（import/注释/调试代码）、"
+            "与 MEMORY.md 重复、假阳性信号。"
+            "可选 LLM advisory（use_llm=True）评估长期价值。"
+            "纯只读，不修改任何文件。"
+        ),
+    },
 
     # ── soul check ────────────────────────────────────────────────────────────
     "soul.header": {
@@ -733,6 +749,124 @@ STRINGS: dict[str, dict[str, str]] = {
     "common.unknown_tool": {
         "en": "Unknown tool: {name}",
         "zh": "未知工具：{name}",
+    },
+
+    # ── promotion audit ────────────────────────────────────────────────────────
+    "promo.header": {
+        "en": "🛡️ Pre-Promotion Audit",
+        "zh": "🛡️ 晋升前质量预检",
+    },
+    "promo.no_shortterm": {
+        "en": "❌ Short-term memory file not found. Cannot perform promotion audit.",
+        "zh": "❌ 短期记忆文件不存在，无法执行晋升前预检。",
+    },
+    "promo.summary": {
+        "en": "Candidates: {total} unpromotted entries, checking Top {top_n}",
+        "zh": "候选池：{total} 条未晋升条目，检查 Top {top_n}",
+    },
+    "promo.results_header": {
+        "en": "Results:",
+        "zh": "检查结果：",
+    },
+    "promo.pass": {
+        "en": "✓  Pass: {n}",
+        "zh": "✓  通过：{n} 条",
+    },
+    "promo.skip": {
+        "en": "✕  Suggested skip: {n}",
+        "zh": "✕  建议跳过：{n} 条",
+    },
+    "promo.flag": {
+        "en": "⚠️  Needs attention: {n}",
+        "zh": "⚠️  需关注：{n} 条",
+    },
+    "promo.skip_section_header": {
+        "en": "Suggested skip:",
+        "zh": "建议跳过：",
+    },
+    "promo.flag_section_header": {
+        "en": "Needs attention (false positive signal):",
+        "zh": "需关注（假阳性嫌疑）：",
+    },
+    "promo.candidate_line": {
+        "en": "  {idx}. {path}:{start}-{end}  [score≈{score:.2f}]",
+        "zh": "  {idx}. {path}:{start}-{end}  [估算分≈{score:.2f}]",
+    },
+    "promo.skip_reason_source_deleted": {
+        "en": "     Reason: source file no longer exists",
+        "zh": "     原因：来源文件已不存在",
+    },
+    "promo.skip_reason_import_only": {
+        "en": "     Reason: snippet contains only import statements",
+        "zh": "     原因：片段仅含 import 语句，无语义价值",
+    },
+    "promo.skip_reason_comments_only": {
+        "en": "     Reason: snippet contains only comments",
+        "zh": "     原因：片段仅含注释行，无实质内容",
+    },
+    "promo.skip_reason_boilerplate": {
+        "en": "     Reason: snippet is empty or boilerplate only",
+        "zh": "     原因：片段为空或仅含样板代码",
+    },
+    "promo.skip_reason_debug_code": {
+        "en": "     Reason: snippet contains debug output statements",
+        "zh": "     原因：片段含调试输出代码（console.log/print 等）",
+    },
+    "promo.skip_reason_already_promoted": {
+        "en": "     Reason: already exists in MEMORY.md",
+        "zh": "     原因：已存在于 MEMORY.md 中",
+    },
+    "promo.skip_reason_unknown": {
+        "en": "     Reason: {reason}",
+        "zh": "     原因：{reason}",
+    },
+    "promo.flag_reason_fp": {
+        "en": "     avg={avg:.2f}, max={max:.2f} — high-frequency but low quality, possible FTS match",
+        "zh": "     avg={avg:.2f}, max={max:.2f} — 高频命中但分数低，可能是 FTS 字面匹配",
+    },
+    "promo.score_note": {
+        "en": "⚠️  Note: scores are approximate (consolidation dimension excluded, ±10% variance)",
+        "zh": "⚠️  注意：评分为近似值（跳过 consolidation 分量，误差约 ±10%）",
+    },
+    "promo.all_pass": {
+        "en": "✅ All top candidates passed quality checks.",
+        "zh": "✅ Top 候选全部通过质量预检。",
+    },
+    "promo.llm_hint": {
+        "en": "→ Run memory_promotion_audit_oc(use_llm=True) for long-term value advisory",
+        "zh": "→ 运行 memory_promotion_audit_oc(use_llm=True) 获取长期价值建议",
+    },
+    "promo.llm_header": {
+        "en": "── LLM Long-term Value Advisory ─────────────────",
+        "zh": "── LLM 长期价值评估 ──────────────────────────────",
+    },
+    "promo.llm_long_term": {
+        "en": "  Long-term knowledge: {n}",
+        "zh": "  适合长期保留：{n} 条",
+    },
+    "promo.llm_one_time": {
+        "en": "  One-time context: {n}",
+        "zh": "  一次性上下文：{n} 条",
+    },
+    "promo.llm_uncertain": {
+        "en": "  Uncertain: {n}",
+        "zh": "  无法判断：{n} 条",
+    },
+    "promo.llm_one_time_detail_header": {
+        "en": "One-time context (consider skipping):",
+        "zh": "一次性上下文（建议跳过）：",
+    },
+    "promo.llm_advisory_item": {
+        "en": "  {idx}. [{verdict}] {hint}  — {reason}",
+        "zh": "  {idx}. [{verdict}] {hint}  — {reason}",
+    },
+    "promo.llm_error": {
+        "en": "⚠️  LLM advisory unavailable: {msg}",
+        "zh": "⚠️  LLM 评估不可用：{msg}",
+    },
+    "promo.no_candidates": {
+        "en": "ℹ️  No unpromotted candidates found in short-term memory.",
+        "zh": "ℹ️  短期记忆中暂无未晋升的候选条目。",
     },
 }
 

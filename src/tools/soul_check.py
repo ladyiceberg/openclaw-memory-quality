@@ -93,6 +93,7 @@ def run_soul_check(
         content_hash=snap.content_hash,
         directive_count=snap.directive_count,
         sections=snap.sections,
+        risk_level=result.risk_level,
         db_path=db_path,
     )
 

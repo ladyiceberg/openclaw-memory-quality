@@ -6,6 +6,13 @@ session_store.py · 审计结果本地持久化
 状态依赖：audit 生成 report_id，cleanup 凭 report_id 取审计结果，
 不依赖 Claude 在对话上下文中记住细节。
 
+同时存储各工具的最新运行结果，供 Dashboard 聚合展示：
+  - audit_reports     : longterm_audit 完整结果（by report_id）
+  - soul_snapshots    : soul_check 快照 + risk_level
+  - health_snapshots  : health_check 短期记忆统计 + 诊断分
+  - promotion_snapshots: promotion_audit 关卡统计 + 候选列表
+  - config_snapshots  : config_doctor 配置问题列表
+
 存储：~/.openclaw-memhealth/session.db（SQLite）
 保留：最近 MAX_REPORTS_KEPT 次，自动清理旧记录
 
@@ -60,7 +67,29 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
             char_count  INTEGER NOT NULL,
             content_hash TEXT NOT NULL,  -- SHA256 of file content
             directive_count INTEGER NOT NULL,  -- must/always/never count
-            sections    TEXT NOT NULL    -- JSON: list of section names found
+            sections    TEXT NOT NULL,   -- JSON: list of section names found
+            risk_level  TEXT NOT NULL DEFAULT 'ok'  -- ok/low/medium/high
+        );
+
+        CREATE TABLE IF NOT EXISTS health_snapshots (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            workspace       TEXT NOT NULL,
+            checked_at      REAL NOT NULL,
+            payload         TEXT NOT NULL  -- JSON: health check stats
+        );
+
+        CREATE TABLE IF NOT EXISTS promotion_snapshots (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            workspace   TEXT NOT NULL,
+            checked_at  REAL NOT NULL,
+            payload     TEXT NOT NULL  -- JSON: promotion audit result
+        );
+
+        CREATE TABLE IF NOT EXISTS config_snapshots (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            workspace   TEXT NOT NULL,
+            checked_at  REAL NOT NULL,
+            payload     TEXT NOT NULL  -- JSON: config doctor result
         );
     """)
     conn.commit()
@@ -199,6 +228,7 @@ def save_soul_snapshot(
     content_hash: str,
     directive_count: int,
     sections: list,
+    risk_level: str = "ok",
     db_path: Optional[Path] = None,
 ) -> None:
     """
@@ -210,26 +240,28 @@ def save_soul_snapshot(
         content_hash    : 文件内容 SHA256
         directive_count : must/always/never 等强指令词数量
         sections        : 检测到的标准 section 名称列表
+        risk_level      : 风险等级 ok/low/medium/high
         db_path         : 测试用，覆盖默认 DB 路径
     """
     conn = _get_connection(db_path)
     try:
         conn.execute(
             """INSERT INTO soul_snapshots
-               (workspace, checked_at, char_count, content_hash, directive_count, sections)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+               (workspace, checked_at, char_count, content_hash,
+                directive_count, sections, risk_level)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (workspace, time.time(), char_count, content_hash,
-             directive_count, json.dumps(sections)),
+             directive_count, json.dumps(sections), risk_level),
         )
         conn.commit()
         # 只保留该 workspace 最近 20 次快照
         conn.execute(
-            """DELETE FROM soul_snapshots WHERE id NOT IN (
+            """DELETE FROM soul_snapshots WHERE workspace = ? AND id NOT IN (
                 SELECT id FROM soul_snapshots
                 WHERE workspace = ?
                 ORDER BY checked_at DESC LIMIT 20
             )""",
-            (workspace,),
+            (workspace, workspace),
         )
         conn.commit()
     finally:
@@ -245,12 +277,13 @@ def load_last_soul_snapshot(
 
     Returns:
         dict with keys: checked_at, char_count, content_hash,
-                        directive_count, sections (list)
+                        directive_count, sections (list), risk_level
     """
     conn = _get_connection(db_path)
     try:
         row = conn.execute(
-            """SELECT checked_at, char_count, content_hash, directive_count, sections
+            """SELECT checked_at, char_count, content_hash, directive_count,
+                      sections, risk_level
                FROM soul_snapshots
                WHERE workspace = ?
                ORDER BY checked_at DESC LIMIT 1""",
@@ -264,6 +297,280 @@ def load_last_soul_snapshot(
             "content_hash":    row["content_hash"],
             "directive_count": row["directive_count"],
             "sections":        json.loads(row["sections"]),
+            "risk_level":      row["risk_level"],
+        }
+    finally:
+        conn.close()
+
+
+# ── health_check 快照读写 ──────────────────────────────────────────────────────
+
+def save_health_snapshot(
+    workspace: str,
+    payload: dict,
+    db_path: Optional[Path] = None,
+) -> None:
+    """
+    保存 health_check 的统计结果，供 Dashboard 读取。
+
+    payload 结构：
+    {
+        "shortterm_total": int,
+        "zombie_count": int,
+        "zombie_ratio": float,
+        "fp_count": int,
+        "fp_ratio": float,
+        "retrieval_health": int,    # 0-100
+        "promotion_risk": int,      # 0-100
+        "fts_degradation": bool,
+        "longterm_sections": int,   # 若无则 0
+        "longterm_items": int,      # 若无则 0
+    }
+    """
+    conn = _get_connection(db_path)
+    try:
+        conn.execute(
+            """INSERT INTO health_snapshots (workspace, checked_at, payload)
+               VALUES (?, ?, ?)""",
+            (workspace, time.time(), json.dumps(payload)),
+        )
+        conn.commit()
+        # 只保留最近 10 次
+        conn.execute(
+            """DELETE FROM health_snapshots WHERE workspace = ? AND id NOT IN (
+                SELECT id FROM health_snapshots
+                WHERE workspace = ?
+                ORDER BY checked_at DESC LIMIT 10
+            )""",
+            (workspace, workspace),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def load_last_health_snapshot(
+    workspace: str,
+    db_path: Optional[Path] = None,
+) -> Optional[dict]:
+    """读取该 workspace 最近一次 health_check 快照。"""
+    conn = _get_connection(db_path)
+    try:
+        row = conn.execute(
+            """SELECT checked_at, payload FROM health_snapshots
+               WHERE workspace = ? ORDER BY checked_at DESC LIMIT 1""",
+            (workspace,),
+        ).fetchone()
+        if row is None:
+            return None
+        data = json.loads(row["payload"])
+        data["checked_at"] = row["checked_at"]
+        return data
+    finally:
+        conn.close()
+
+
+# ── promotion_audit 快照读写 ───────────────────────────────────────────────────
+
+def save_promotion_snapshot(
+    workspace: str,
+    payload: dict,
+    db_path: Optional[Path] = None,
+) -> None:
+    """
+    保存 promotion_audit 的结果，供 Dashboard 读取。
+
+    payload 结构：
+    {
+        "total_unpromotted": int,
+        "top_n": int,
+        "pass_count": int,
+        "skip_count": int,
+        "flag_count": int,
+        "candidates": [
+            {
+                "path": str,
+                "start": int,
+                "end": int,
+                "composite": float,
+                "verdict": str,           # pass/skip/flag
+                "skip_reason": str|None,
+                "flag_reason": str|None,
+            },
+            ...
+        ],
+        "llm_eval": {...} | None,          # 可选，use_llm=True 时有
+    }
+    """
+    conn = _get_connection(db_path)
+    try:
+        conn.execute(
+            """INSERT INTO promotion_snapshots (workspace, checked_at, payload)
+               VALUES (?, ?, ?)""",
+            (workspace, time.time(), json.dumps(payload)),
+        )
+        conn.commit()
+        conn.execute(
+            """DELETE FROM promotion_snapshots WHERE workspace = ? AND id NOT IN (
+                SELECT id FROM promotion_snapshots
+                WHERE workspace = ?
+                ORDER BY checked_at DESC LIMIT 10
+            )""",
+            (workspace, workspace),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def load_last_promotion_snapshot(
+    workspace: str,
+    db_path: Optional[Path] = None,
+) -> Optional[dict]:
+    """读取该 workspace 最近一次 promotion_audit 快照。"""
+    conn = _get_connection(db_path)
+    try:
+        row = conn.execute(
+            """SELECT checked_at, payload FROM promotion_snapshots
+               WHERE workspace = ? ORDER BY checked_at DESC LIMIT 1""",
+            (workspace,),
+        ).fetchone()
+        if row is None:
+            return None
+        data = json.loads(row["payload"])
+        data["checked_at"] = row["checked_at"]
+        return data
+    finally:
+        conn.close()
+
+
+# ── config_doctor 快照读写 ─────────────────────────────────────────────────────
+
+def save_config_snapshot(
+    workspace: str,
+    payload: dict,
+    db_path: Optional[Path] = None,
+) -> None:
+    """
+    保存 config_doctor 的诊断结果，供 Dashboard 读取。
+
+    payload 结构：
+    {
+        "all_good": bool,
+        "issues": [
+            {"code": str, "triggered": bool, "signal_data": dict},
+            ...
+        ]
+    }
+    """
+    conn = _get_connection(db_path)
+    try:
+        conn.execute(
+            """INSERT INTO config_snapshots (workspace, checked_at, payload)
+               VALUES (?, ?, ?)""",
+            (workspace, time.time(), json.dumps(payload)),
+        )
+        conn.commit()
+        conn.execute(
+            """DELETE FROM config_snapshots WHERE workspace = ? AND id NOT IN (
+                SELECT id FROM config_snapshots
+                WHERE workspace = ?
+                ORDER BY checked_at DESC LIMIT 5
+            )""",
+            (workspace, workspace),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def load_last_config_snapshot(
+    workspace: str,
+    db_path: Optional[Path] = None,
+) -> Optional[dict]:
+    """读取该 workspace 最近一次 config_doctor 快照。"""
+    conn = _get_connection(db_path)
+    try:
+        row = conn.execute(
+            """SELECT checked_at, payload FROM config_snapshots
+               WHERE workspace = ? ORDER BY checked_at DESC LIMIT 1""",
+            (workspace,),
+        ).fetchone()
+        if row is None:
+            return None
+        data = json.loads(row["payload"])
+        data["checked_at"] = row["checked_at"]
+        return data
+    finally:
+        conn.close()
+
+
+# ── Dashboard 聚合读取 ─────────────────────────────────────────────────────────
+
+def load_dashboard_data(
+    workspace: str,
+    db_path: Optional[Path] = None,
+) -> dict:
+    """
+    一次性读取 Dashboard 所需的全部最新数据。
+
+    Returns:
+        {
+            "longterm_audit": (report_id, payload) | None,
+            "soul":           snapshot_dict | None,
+            "health":         snapshot_dict | None,
+            "promotion":      snapshot_dict | None,
+            "config":         snapshot_dict | None,
+        }
+    """
+    conn = _get_connection(db_path)
+    try:
+        # longterm audit：按 workspace 过滤取最近一次
+        audit_row = conn.execute(
+            """SELECT report_id, payload FROM audit_reports
+               WHERE workspace = ? ORDER BY created_at DESC LIMIT 1""",
+            (workspace,),
+        ).fetchone()
+        longterm = None
+        if audit_row:
+            longterm = (audit_row["report_id"], json.loads(audit_row["payload"]))
+
+        def _load_latest(table: str) -> Optional[dict]:
+            row = conn.execute(
+                f"""SELECT checked_at, payload FROM {table}
+                    WHERE workspace = ? ORDER BY checked_at DESC LIMIT 1""",
+                (workspace,),
+            ).fetchone()
+            if row is None:
+                return None
+            data = json.loads(row["payload"])
+            data["checked_at"] = row["checked_at"]
+            return data
+
+        soul_row = conn.execute(
+            """SELECT checked_at, char_count, content_hash, directive_count,
+                      sections, risk_level
+               FROM soul_snapshots WHERE workspace = ?
+               ORDER BY checked_at DESC LIMIT 1""",
+            (workspace,),
+        ).fetchone()
+        soul = None
+        if soul_row:
+            soul = {
+                "checked_at":      soul_row["checked_at"],
+                "char_count":      soul_row["char_count"],
+                "content_hash":    soul_row["content_hash"],
+                "directive_count": soul_row["directive_count"],
+                "sections":        json.loads(soul_row["sections"]),
+                "risk_level":      soul_row["risk_level"],
+            }
+
+        return {
+            "longterm_audit": longterm,
+            "soul":           soul,
+            "health":         _load_latest("health_snapshots"),
+            "promotion":      _load_latest("promotion_snapshots"),
+            "config":         _load_latest("config_snapshots"),
         }
     finally:
         conn.close()

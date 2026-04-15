@@ -32,6 +32,7 @@ from src.analyzers.promotion_auditor import (
     PromotionCandidate,
     run_promotion_audit,
 )
+from src.session_store import save_promotion_snapshot
 from i18n import t
 
 
@@ -51,6 +52,7 @@ def run_promotion_audit_tool(
     probe: ProbeResult,
     top_n: int = 10,
     use_llm: bool = False,
+    db_path=None,
 ) -> str:
     """
     执行晋升前质量预检，返回格式化文本。
@@ -59,6 +61,7 @@ def run_promotion_audit_tool(
         probe   : probe_workspace() 的返回值
         top_n   : 检查评分最高的前 N 条候选（默认 10）
         use_llm : 是否启用关卡 5 LLM 长期价值 advisory
+        db_path : 测试用，覆盖默认 SQLite 路径
 
     Returns:
         格式化的预检报告
@@ -152,6 +155,7 @@ def run_promotion_audit_tool(
     lines.append(t("promo.score_note"))
 
     # ── 关卡 5：LLM 长期价值 advisory ──────────────────────────────────────
+    llm_eval = None
     if use_llm:
         llm_eval = _run_llm_eval(audit.candidates, lines)
         if llm_eval is not None:
@@ -159,6 +163,43 @@ def run_promotion_audit_tool(
     elif audit.pass_count + audit.flag_count > 0:
         lines.append("")
         lines.append(t("promo.llm_hint"))
+
+    # ── 存入 session_store（供 Dashboard 读取）──────────────────────────────
+    try:
+        candidates_payload = [
+            {
+                "path":        c.entry.path,
+                "start":       c.entry.start_line,
+                "end":         c.entry.end_line,
+                "composite":   round(c.score.composite, 3),
+                "verdict":     c.verdict,
+                "skip_reason": c.skip_reason,
+                "flag_reason": c.flag_reason,
+            }
+            for c in audit.candidates
+        ]
+        llm_payload = None
+        if llm_eval is not None:
+            llm_payload = {
+                "long_term_count": llm_eval.long_term_count,
+                "one_time_count":  llm_eval.one_time_count,
+                "uncertain_count": llm_eval.uncertain_count,
+            }
+        save_promotion_snapshot(
+            workspace=probe.workspace_dir,
+            payload={
+                "total_unpromotted": audit.total_unpromotted,
+                "top_n":             audit.top_n,
+                "pass_count":        audit.pass_count,
+                "skip_count":        audit.skip_count,
+                "flag_count":        audit.flag_count,
+                "candidates":        candidates_payload,
+                "llm_eval":          llm_payload,
+            },
+            db_path=db_path,
+        )
+    except Exception:
+        pass  # 存储失败不影响主流程
 
     # 去掉末尾多余空行
     while lines and lines[-1] == "":

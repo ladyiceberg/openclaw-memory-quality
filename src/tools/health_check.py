@@ -29,16 +29,22 @@ from src.readers.longterm_reader import (
 )
 from src.analyzers.zombie_detector import compute_zombie_stats
 from src.analyzers.false_positive import compute_false_positive_stats
+from src.session_store import save_health_snapshot
 from i18n import t
 
 
-def run_health_check(probe: ProbeResult, now_ms: Optional[int] = None) -> str:
+def run_health_check(
+    probe: ProbeResult,
+    now_ms: Optional[int] = None,
+    db_path=None,
+) -> str:
     """
     执行健康检查，返回格式化文本。
 
     Args:
         probe   : probe_workspace() 的返回值
         now_ms  : 当前时间毫秒戳（测试用，不传则取系统时间）
+        db_path : 测试用，覆盖默认 SQLite 路径
 
     Returns:
         格式化的健康检查报告（多行文本）
@@ -139,6 +145,33 @@ def run_health_check(probe: ProbeResult, now_ms: Optional[int] = None) -> str:
         lines.append(t("health.suggest_diagnose"))
     if probe.has_longterm:
         lines.append(t("health.suggest_audit"))
+
+    # ── 存入 session_store（供 Dashboard 读取）──────────────────────────────────
+    lt_sections = 0
+    lt_items = 0
+    if isinstance(lt_result, LongTermStore):
+        lt_sections = len(lt_result.sections)
+        lt_items = lt_result.total_items
+
+    try:
+        save_health_snapshot(
+            workspace=probe.workspace_dir,
+            payload={
+                "shortterm_total":   zombie_stats.total,
+                "zombie_count":      zombie_stats.zombie_count,
+                "zombie_ratio":      round(zombie_stats.zombie_ratio, 4),
+                "fp_count":          fp_stats.suspect_count,
+                "fp_ratio":          round(fp_stats.suspect_ratio, 4),
+                "retrieval_health":  rh,
+                "promotion_risk":    pr,
+                "fts_degradation":   fp_stats.fts_degradation_suspected,
+                "longterm_sections": lt_sections,
+                "longterm_items":    lt_items,
+            },
+            db_path=db_path,
+        )
+    except Exception:
+        pass  # 存储失败不影响主流程
 
     # 去掉末尾多余空行
     while lines and lines[-1] == "":

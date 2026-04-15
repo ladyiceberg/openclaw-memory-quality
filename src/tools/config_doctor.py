@@ -30,6 +30,7 @@ from src.readers.shortterm_reader import (
     read_shortterm,
 )
 from src.analyzers.false_positive import compute_avg_score, compute_false_positive_stats
+from src.session_store import save_config_snapshot
 from i18n import t
 
 
@@ -202,12 +203,13 @@ def _build_config_snippet(
 
 # ── 主入口 ────────────────────────────────────────────────────────────────────
 
-def run_config_doctor(probe: ProbeResult) -> str:
+def run_config_doctor(probe: ProbeResult, db_path=None) -> str:
     """
     执行配置诊断，返回格式化文本。
 
     Args:
-        probe: probe_workspace() 的返回值
+        probe   : probe_workspace() 的返回值
+        db_path : 测试用，覆盖默认 SQLite 路径
 
     Returns:
         格式化的配置诊断报告
@@ -247,6 +249,14 @@ def run_config_doctor(probe: ProbeResult) -> str:
 
     if not triggered:
         lines.append(t("doctor.all_good"))
+        try:
+            save_config_snapshot(
+                workspace=probe.workspace_dir,
+                payload={"all_good": True, "issues": []},
+                db_path=db_path,
+            )
+        except Exception:
+            pass
         return "\n".join(lines)
 
     lines.append(t("doctor.issues_found", n=len(triggered)))
@@ -299,6 +309,25 @@ def run_config_doctor(probe: ProbeResult) -> str:
         lines.append(t("doctor.config_snippet_header"))
         lines.append("")
         lines.append(snippet)
+
+    # ── 存入 session_store（供 Dashboard 读取）──────────────────────────────
+    try:
+        issues_payload = [
+            {
+                "code":        d.code,
+                "triggered":   d.triggered,
+                "signal_data": d.signal_data,
+            }
+            for d in [d1_fts, d2_minscore, d3_mmr, d4_embedding]
+            if d.triggered
+        ]
+        save_config_snapshot(
+            workspace=probe.workspace_dir,
+            payload={"all_good": False, "issues": issues_payload},
+            db_path=db_path,
+        )
+    except Exception:
+        pass  # 存储失败不影响主流程
 
     # 去掉末尾多余空行
     while lines and lines[-1] == "":

@@ -41,8 +41,9 @@ def run_dashboard(
     lines.append("")
 
     try:
+        workspace = str(Path(probe.workspace_dir).resolve())
         output_path = open_dashboard(
-            workspace=probe.workspace_dir,
+            workspace=workspace,
             db_path=db_path,
         )
         lines.append(t("dashboard.opened", path=str(output_path)))
